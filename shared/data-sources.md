@@ -31,6 +31,8 @@ Readiness 監査（`skills/nr-appsec-guard/references/readiness-checks.md`）は
 
 ## 2. トランザクション名 = API エンドポイント
 
+> REST 以外の方式（GraphQL・SOAP・JSON-RPC・WebSocket）では、トランザクション名ではなく `api.operation` を API の単位にする（`shared/protocols.md`）。
+
 API 単位で認可を評価するには、**1つの API が1つのトランザクション名になっている**必要がある。ここが崩れていると、コード監査との突き合わせも、エンドポイント別の検知もできない。
 
 | 状態 | 例 | 問題 | 対処 |

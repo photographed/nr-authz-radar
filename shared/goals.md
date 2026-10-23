@@ -15,7 +15,7 @@
 |---|---|---|
 | **S0** エージェントのみ | APM エージェントを既定の設定で入れる（分散トレーシングが有効か確認） | ② 利用実態のほぼすべて。③ のうち D04、D06〜D10、D12、D17、D18、D20、D21 |
 | **S1** 設定のみ | `newrelic.yml` などで `enduser.id` を送る（**生の ID ではなく仮名化が望ましい**ため、実際は S2 と同時に API で送ることが多い） | ユーザー単位の利用実態、D03（ID 列挙）、D13 |
-| **S2** 最小限のコード | **`resource.owner_match` と `authz.decision` の2つ**（＋ `enduser.id`） | **D01（IDOR 成功の証拠）**、D02 |
+| **S2** 最小限のコード | **`resource.owner_match` と `authz.decision` の2つ**（＋ `enduser.id`。REST 以外の方式は ＋ `api.protocol`・`api.operation`） | **D01（IDOR 成功の証拠）**、D02 |
 | **S3** 全属性 | `shared/attribute-spec.md` の残り | D05、D11、D14、D15 |
 
 **どうしても必要なコード計装は S2 の2属性だけ。** 他の属性には代わりの手段がある。

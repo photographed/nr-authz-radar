@@ -88,6 +88,21 @@ SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND resource.owner_
 FACET name, resource.owner_match SINCE 1 hour ago
 ```
 
+## 2-6. GraphQL・WebSocket（STOMP）
+
+ライブラリは、クラスパスに Spring for GraphQL / spring-messaging があれば自動で次を行う（設定は不要）。
+
+| 方式 | 対象 | 記録するもの |
+|---|---|---|
+| GraphQL | `@QueryMapping` / `@MutationMapping` / `@SubscriptionMapping` / `@SchemaMapping` | `api.protocol = graphql`、`api.operation = Query.order`（**サーバー側のフィールド名**。1リクエストに複数あれば最大3つまで連結）、リゾルバの `@PreAuthorize` による拒否 |
+| WebSocket（STOMP） | `@MessageMapping` / `@SubscribeMapping` | **メッセージごとにトランザクションを作る**（`@Trace(dispatcher = true)`。名前は `WebSocket/SEND <宛先>`・`WebSocket/SUBSCRIBE <宛先>`）、`api.protocol = websocket`、`api.operation` |
+
+- **WebSocket は Java エージェントが計装しない**（9.5.0 で確認）。このライブラリを使わない場合、メッセージの処理で記録した属性は捨てられる。
+- 購読（`@SubscribeMapping`）で他人の宛先を指定できないように、購読の処理で返すリソースにも `@CheckOwnership` を付ける。
+- HTTP のリクエストが無い場面でも、「deny が優先」「owner_match は false のまま」の規則が保たれる（メッセージ単位の状態）。
+- `@Trace(dispatcher = true)` によるトランザクションの作成は、**実際のエージェントでは未確認**（テストは、エージェントが読む注釈が付いていることの確認まで）。Phase 5 で確認する。
+- `@ServerEndpoint`（JSR 356）や `WebSocketHandler` を直接使う場合は対象外。メッセージを処理するメソッドに `@Trace(dispatcher = true)` を付け、`AuthzTelemetry#protocol` で記録する。
+
 ## 3. 全属性（S3）
 `attributes: FULL` にすると、`shared/attribute-spec.md` の残り（`authz.required_scope`・`authz.granted_scopes`・`authz.deny_reason`・
 `resource.type`・`auth.token_age_sec` 等）も送る。
@@ -122,4 +137,6 @@ XML で認可チェックのメソッドを計測すると、「その API で�
 | Spring Boot 3.5.16 / Spring Security 6.5 | ✅ テスト済み（単体テストと、MockMvc による結合テスト） |
 | Spring Boot 4.1.2 / Spring Security 7.1 | ✅ テスト済み（`./gradlew test -PspringBootVersion=4.1.2`） |
 | New Relic Java エージェント API | 9.5.0 |
+| GraphQL（Spring for GraphQL） | ✅ テスト済み（リゾルバの直接呼び出し。GraphQL エンジン経由の確認は Phase 5） |
+| WebSocket（Spring STOMP） | ✅ テスト済み（ハンドラの直接呼び出し）。エージェントでのトランザクション作成は未確認 |
 | WebFlux | ❌ 未対応（Spring MVC のみ） |

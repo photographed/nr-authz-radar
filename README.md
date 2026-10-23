@@ -95,11 +95,26 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | サーバー | APM の `Transaction` | 観測されるのにコードにない → シャドー API |
 | 画面 | Browser の `AjaxRequest` | サーバーで呼ばれているのに画面からは呼ばれない → **直接呼び出しの可能性**（アプリ解析による API の特定） |
 
+## API の方式（REST・GraphQL・SOAP・gRPC・WebSocket・JSON-RPC）
+
+所有者照合（S2）はデータ取得の層で行うので、**方式や呼び出し元に関係なく同じ判定ができます。** 一方で、方式によって見え方が変わる部分があります。詳細は [`shared/protocols.md`](shared/protocols.md)。
+
+| 方式 | Java エージェントの標準の計装 | 注意点 | 対策 |
+|---|---|---|---|
+| REST | ✅ | — | — |
+| GraphQL | ✅ | **拒否しても 200**。トランザクション名は**クライアントが偽装できる** operation 名から作られる。エイリアスで1回に大量の ID を並べられる | `api.operation`（サーバー側のフィールド名）、D22（認可拒否の急増）、D23（1リクエストでの大量の照合）、F11 |
+| SOAP | ✅ | 拒否が **500 の SOAP Fault** になることが多い | `api.operation`、D22 |
+| gRPC | ✅ | HTTP ではなく gRPC のステータス | D04・D10 を `response.status` で読み替え |
+| **WebSocket** | ❌ **計装なし** | **メッセージがトランザクションにならず、送った属性が捨てられる**（エラーにもならない） | **メッセージごとにトランザクションを作る**（Java ライブラリは STOMP に自動対応）、R15、F12 |
+| JSON-RPC | HTTP として | 1つの URL にまとまり、エラーは 200 | `api.operation`、D22 |
+
+**ステータスコードを使う検知（D04・D10）は REST 専用です。** REST 以外で反応しないことを「安全」と読まないでください。
+
 ## 含まれる Skill
 
 | Skill | 役割 |
 |---|---|
-| `nr-appsec-guard` | 実行時: 前提の確認（段階とデータソース）、② 利用実態（U01〜U05）、③ 攻撃検知（D01〜D21。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、④ 調査（I01〜I07）、計装の推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
+| `nr-appsec-guard` | 実行時: 前提の確認（段階とデータソース）、② 利用実態（U01〜U06）、③ 攻撃検知（D01〜D23。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、④ 調査（I01〜I07）、計装の推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
 | `api-authz-review` | ① 棚卸し（コード）: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・OS コマンドインジェクション・デシリアライズ・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
 
 ## 計装（S2 への最短経路）
@@ -108,7 +123,7 @@ S2（IDOR 成功の証拠）に到達するためのコードを [`instrumentati
 
 | 言語 | 形 | 状態 |
 |---|---|---|
-| **Java**（Spring Boot / Spring Security） | 計装ライブラリ（アノテーション1つで使える） | ✅ Spring Boot 3.5・4.1 でテスト済み |
+| **Java**（Spring Boot / Spring Security） | 計装ライブラリ（アノテーション1つで使える。REST・GraphQL・WebSocket（STOMP）に対応） | ✅ Spring Boot 3.5・4.1 でテスト済み |
 | Python・Node.js・Ruby・Go | 取り込める小さなファイル | ✅ 単体テスト済み（API は実パッケージで確認） |
 | PHP | 同上 | ⚠️ API 名が未確認 |
 | .NET | 同上 | ❌ 未コンパイル |
@@ -126,6 +141,7 @@ public Order find(Long id) { ... }
 - 既定は **S2 の最小セット**（`authz.decision`・`resource.owner_match`・仮名化した `enduser.id`）。設定で S3 の全属性
 - **OBSERVE モード**（記録だけ）で本当に起きている IDOR を見つけてから、ENFORCE モード（拒否）に切り替えられる
 - 必要スコープは `@PreAuthorize` / `@Secured` から自動で取得。エンドポイントごとの記述は不要
+- GraphQL のリゾルバ（Spring for GraphQL）ではサーバー側のフィールド名を、WebSocket（STOMP）ではメッセージごとにトランザクションを作って記録
 - Spring Boot 3.5（Spring Security 6.5）と 4.1（Spring Security 7.1）でテスト済み。Maven Central には未公開
 
 使い方は [`instrumentation-java.md`](skills/nr-appsec-guard/references/instrumentation-java.md)、他の言語は [`instrumentation-other-languages.md`](skills/nr-appsec-guard/references/instrumentation-other-languages.md)。
@@ -136,7 +152,7 @@ public Order find(Long id) { ... }
 python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/terraform
 ```
 
-- **今の段階とデータソースで動くアラートだけを Terraform として生成**します（10種類。定義は [`shared/alerts.json`](shared/alerts.json)）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出ます。
+- **今の段階とデータソースで動くアラートだけを Terraform として生成**します（12種類。定義は [`shared/alerts.json`](shared/alerts.json)）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出ます。
 - CRITICAL と HIGH で Slack のチャンネルを分けます。CRITICAL は Workflow Automation で情報を集め、Autopilot（有効な場合。iRCA の結果も使う）に調査させてから通知します。
 - ランブックは New Relic Knowledge に登録して Autopilot が参照できる形です（[`templates/knowledge-runbooks/`](templates/knowledge-runbooks/)）。
 - 適用は利用者が行います（生成のみ）。
@@ -158,29 +174,29 @@ python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/te
 
 | 項目 | 対応 | このプラグインでやること | やらないこと |
 |---|---|---|---|
-| A01 Broken Access Control | ◎ | IDOR / BOLA・スコープ不備・BFLA のコード監査（F2–F5）と実行時検知（D01–D05） | — |
+| A01 Broken Access Control | ◎ | IDOR / BOLA・スコープ不備・BFLA のコード監査（F2–F5）と実行時検知（D01–D05、方式に依存しない D22・D23） | — |
 | A02 Security Misconfiguration | △ | `permitAll` 等のセキュリティ設定の漏れ（F1）、監視設定（High-security mode・`record_sql`）の確認 | サーバー・ミドルウェア・クラウドの設定監査 |
 | A03 Software Supply Chain Failures | × | New Relic Vulnerability Management の結果を参照するよう案内するのみ | SBOM・依存関係の脆弱性スキャン |
 | A04 Cryptographic Failures | × | — | 暗号方式・鍵管理・TLS 設定の監査 |
 | A05 Injection | ○ | **SQL インジェクション**（F7、D06–D09）と **OS コマンドインジェクション・RCE の兆候**（F9、D20、D21） | XSS・LDAP・テンプレート等の他のインジェクション（IAST の結果を参照） |
-| A06 Insecure Design | △ | Mass Assignment（F6）、上限のない一覧取得（F8）、脅威モデル | 設計レビュー全般 |
-| A07 Authentication Failures | ○ | 認証なしの API（F1）、認証失敗の急増（D10）、長寿命トークン（D15）、API キーの異常利用（D14） | パスワードポリシー・MFA・セッション管理の監査 |
+| A06 Insecure Design | △ | Mass Assignment（F6）、上限のない一覧取得（F8）、GraphQL の防御不足（F11）、脅威モデル | 設計レビュー全般 |
+| A07 Authentication Failures | ○ | 認証なしの API（F1）、認証失敗の急増（D10）、長寿命トークン（D15）、API キーの異常利用（D14）、WebSocket の接続中の権限確認（F12） | パスワードポリシー・MFA・セッション管理の監査 |
 | A08 Software or Data Integrity Failures | △ | **安全でないデシリアライズのみ**（F10、D21） | CI/CD・署名・更新の完全性の検証 |
-| A09 Security Logging and Alerting Failures | ◎ | 前提の確認（R01–R14。サンプリング・保存期間を含む）、調査の手順（I01–I07）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
+| A09 Security Logging and Alerting Failures | ◎ | 前提の確認（R01–R15。サンプリング・保存期間・WebSocket の計装漏れを含む）、調査の手順（I01–I07）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
 | A10 Mishandling of Exceptional Conditions | △ | 新しい種類の例外の出現（D17）、Errors Inbox の活用 | 例外処理のコード監査全般 |
 
 ### OWASP API Security Top 10:2023
 
 | 項目 | 対応 | 内容 |
 |---|---|---|
-| API1 Broken Object Level Authorization | ◎ | F4、D01–D03 |
+| API1 Broken Object Level Authorization | ◎ | F4、D01–D03、D22、D23 |
 | API2 Broken Authentication | ○ | F1、D10、D14、D15 |
 | API3 Broken Object Property Level Authorization | ○ | F6（Mass Assignment）、F8（過剰なデータ露出） |
-| API4 Unrestricted Resource Consumption | △ | 上限のない `size`（F8）、自動化された大量アクセス（D11、D13） |
+| API4 Unrestricted Resource Consumption | △ | 上限のない `size`（F8）、GraphQL の深さ・エイリアスの上限なし（F11）、自動化された大量アクセス（D11、D13、D23） |
 | API5 Broken Function Level Authorization | ◎ | F5、D05 |
 | API6 Unrestricted Access to Sensitive Business Flows | △ | 業務トランザクションの異常頻度（検知の考え方のみ） |
 | API7 Server Side Request Forgery | × | — |
-| API8 Security Misconfiguration | △ | A02 と同じ |
+| API8 Security Misconfiguration | △ | A02 と同じ。GraphQL の introspection（F11）、WebSocket の Origin 確認（F12） |
 | API9 Improper Inventory Management | ○ | シャドー API / ゾンビ API の突き合わせ（U01・U02 + コード監査） |
 | API10 Unsafe Consumption of APIs | × | — |
 
@@ -229,8 +245,10 @@ python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/te
 | F8 過剰なデータ露出・上限のない取得 | CWE-213, CWE-770 | V14, V2 | A06, API3, API4 | — |
 | F9 OS コマンドインジェクション | CWE-78 | V1 | A05 | 1.2 |
 | F10 安全でないデシリアライズ | CWE-502 | V1 | A08 | — |
+| F11 GraphQL の防御不足（introspection・深さ・エイリアス） | CWE-770, CWE-200 | V4 | A06, API4, API8 | — |
+| F12 WebSocket の防御不足（Origin 確認・接続中の権限確認） | CWE-1385, CWE-613 | V4 | A01, A07, API2, API8 | — |
 
-検知（D01〜D18）の対応は `shared/standards.json` を参照してください。
+検知（D01〜D23）の対応は `shared/standards.json` を参照してください。
 OAT と AI エージェントの結び付けは本プラグインの分析であり、OWASP の公式な位置付けではありません。
 
 ### 対象外とした規格
@@ -290,8 +308,9 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.3.0** 必要なデータソースの整理（R12、D19）、IAST との役割分担、RCE の一部（F9、F10、D20、D21）
 - [x] **v0.4.0** 4つの目的（棚卸し / 利用実態 / 攻撃検知 / 調査）と段階（S0〜S3）で再構成。利用実態 U01〜U05（D16・D19 を移動）、調査 I01〜I07、前提の確認 R13・R14。レポートを「今わかること」と「推奨」に分離
 - [x] **v0.5.0** Java（Spring Boot / Spring Security）の計装ライブラリ。S2 の最小セットが既定、OBSERVE / ENFORCE モード、設定例（`newrelic.yml`・XML）
-- [x] **v0.7.0** Spring Boot 4.1 でのテスト、XML 候補の自動生成、Python・Node.js・Ruby・Go・PHP・.NET の S2 計装
 - [x] **v0.6.0** Phase 4: アラート条件の生成（段階とデータソースに合わせる）・Alert Workflow・Slack・Workflow Automation の下書き（Autopilot / iRCA 分岐）・Autopilot のプロンプト・Knowledge 用ランブック
+- [x] **v0.7.0** Spring Boot 4.1 でのテスト、XML 候補の自動生成、Python・Node.js・Ruby・Go・PHP・.NET の S2 計装
+- [x] **v0.8.0** REST 以外の方式（GraphQL・SOAP・gRPC・WebSocket・JSON-RPC）への対応: `api.protocol`・`api.operation`、方式に依存しない検知 D22・D23、R15、U06、F11・F12、Java ライブラリの GraphQL・STOMP 対応
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考

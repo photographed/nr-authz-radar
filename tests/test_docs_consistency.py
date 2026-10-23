@@ -9,7 +9,7 @@ REFS = ROOT / "skills" / "nr-appsec-guard" / "references"
 class DocsConsistencyTest(unittest.TestCase):
     def test_referenced_detections_exist(self):
         defined = set(re.findall(r"^### (D\d{2}) ", (REFS / "detections.nrql.md").read_text(), re.M))
-        self.assertEqual(len(defined), 19)
+        self.assertEqual(len(defined), 21)
         for path in [REFS / "readiness-checks.md", REFS / "detections.nrql.md"]:
             for ref in set(re.findall(r"\bD\d{2}\b", path.read_text())):
                 self.assertIn(ref, defined, f"{path.name} references undefined {ref}")
@@ -46,7 +46,7 @@ class GoalStructureTest(unittest.TestCase):
                     self.assertRegex(line, r"段階 S[0-3]", f"{filename}: {line}")
 
     def test_usage_and_investigation_counts(self):
-        self.assertEqual(len(_defined("U", "usage.nrql.md")), 5)
+        self.assertEqual(len(_defined("U", "usage.nrql.md")), 6)
         self.assertEqual(len(_defined("I", "investigation.nrql.md")), 7)
 
     def test_reports_separate_now_from_recommendations(self):

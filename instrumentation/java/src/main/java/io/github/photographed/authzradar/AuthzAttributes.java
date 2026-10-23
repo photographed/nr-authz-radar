@@ -15,6 +15,9 @@ public final class AuthzAttributes {
     public static final String CLIENT_TYPE = "client.type";
     public static final String API_KEY_ID = "api.key_id";
     public static final String TOKEN_AGE_SEC = "auth.token_age_sec";
+    public static final String PROTOCOL = "api.protocol";
+    public static final String OPERATION = "api.operation";
+    public static final String CHECK_COUNT = "resource.check_count";
 
     public static final String ALLOW = "allow";
     public static final String DENY = "deny";

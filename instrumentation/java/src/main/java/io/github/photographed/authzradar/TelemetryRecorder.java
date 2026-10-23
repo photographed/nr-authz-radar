@@ -13,6 +13,9 @@ public interface TelemetryRecorder {
 
     void userId(String pseudonymousUserId);
 
+    /** Names the current transaction (used for WebSocket messages, which the agent does not name). */
+    void transactionName(String category, String name);
+
     /** Records an expected error: grouped in Errors Inbox without affecting error rate or Apdex. */
     void expectedError(Throwable error, Map<String, ?> attributes);
 }

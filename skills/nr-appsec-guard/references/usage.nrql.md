@@ -52,3 +52,12 @@ WHERE appName = '{appName}' AND transactionType = 'Web'
 FACET name, http.statusCode SINCE 7 days ago LIMIT MAX
 ```
 - 平常時の 401 / 403 / 404 の割合を知る。D04・D10 の平常時の値になる。
+
+### U06 方式ごとの利用状況 — 段階 S2（REST 以外）
+```sql
+SELECT count(*), uniqueCount(enduser.id) AS users FROM Transaction
+WHERE appName = '{appName}' AND api.protocol IS NOT NULL
+FACET api.protocol, api.operation SINCE 7 days ago LIMIT MAX
+```
+- GraphQL・SOAP・JSON-RPC・WebSocket の **操作単位** の一覧。U01（トランザクション名の一覧）の代わりに、コード監査の棚卸しと突き合わせる。
+- `api.protocol` が無い場合は R15 で方式を推定する。

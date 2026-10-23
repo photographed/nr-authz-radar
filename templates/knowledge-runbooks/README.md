@@ -5,7 +5,7 @@ New Relic Knowledge に登録して、Autopilot が調査中に参照できる�
 
 | ファイル | 対象の検知 |
 |---|---|
-| `idor.md` | D01・D02・D03 |
+| `idor.md` | D01・D02・D03・D22・D23 |
 | `recon.md` | D04 |
 | `sqli.md` | D06・D07 |
 | `auth.md` | D10・D11 |

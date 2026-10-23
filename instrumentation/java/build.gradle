@@ -26,6 +26,8 @@ dependencies {
     compileOnly 'org.springframework.security:spring-security-oauth2-jose'
     compileOnly 'org.aspectj:aspectjweaver'
     compileOnly 'org.springframework:spring-aop'
+    compileOnly 'org.springframework.graphql:spring-graphql'
+    compileOnly 'org.springframework:spring-messaging'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     // Spring Boot 4 renamed some starters: pick the right ones for the version under test.
@@ -35,6 +37,8 @@ dependencies {
     testImplementation "org.springframework.boot:${boot4 ? 'spring-boot-starter-aspectj' : 'spring-boot-starter-aop'}"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.graphql:spring-graphql'
+    testImplementation 'org.springframework:spring-messaging'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

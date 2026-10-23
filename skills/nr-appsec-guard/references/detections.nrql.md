@@ -62,7 +62,7 @@ FACET enduser.id, name SINCE 1 hour ago LIMIT 20
 - 判定: 1ユーザーが1時間に 100 以上の異なる ID → `strong`、30 以上 → `weak`
 - 誤検知: 一覧画面からの詳細の連続表示。Browser のセッションと突き合わせる（D12）。
 
-### D04 404 / 403 比率の急上昇 — 段階 S0 — 前提なし
+### D04 404 / 403 比率の急上昇 — 段階 S0 — 前提なし — REST 専用
 ```sql
 SELECT percentage(count(*), WHERE http.statusCode IN (403, 404)) AS deny_or_notfound
 FROM Transaction WHERE appName = '{appName}'
@@ -70,6 +70,7 @@ FACET name SINCE {since} COMPARE WITH {baseline}
 ```
 - 判定: 平常時の5倍以上 → `strong`、2倍以上 → `weak`
 - 意味: 属性が無くても使える、列挙・探索の汎用シグナル。
+- **REST 専用**: GraphQL・JSON-RPC は拒否しても 200、SOAP は 500 を返すことが多く、WebSocket はメッセージが見えないため反応しない。**反応しないことを「安全」と読まない。** REST 以外は D22 を使う（`shared/protocols.md`）。
 
 ### D05 スコープ不足・管理系への到達 — 段階 S3 — 前提 ATTR
 ```sql
@@ -80,6 +81,26 @@ FACET authz.required_scope, enduser.id SINCE {since} LIMIT 20
 - 判定: `admin:` 系スコープへの拒否が同一ユーザーから 10件以上 → `strong`
 
 ---
+
+### D22 認可拒否の急増（方式に依存しない）— 段階 S2
+```sql
+SELECT count(*) FROM Transaction
+WHERE appName = '{appName}' AND authz.decision = 'deny'
+FACET api.protocol, api.operation, name SINCE {since} COMPARE WITH {baseline}
+```
+- D04・D10 の **方式に依存しない版**。ステータスコードではなくアプリ自身の認可判断を数えるので、GraphQL（200）・SOAP（500）・WebSocket でも使える。
+- REST 以外は `api.operation` で集計する（GraphQL のトランザクション名はクライアントが偽装できるため）。
+- 判定: 平常時の5倍以上 → `strong`、2倍以上 → `weak`
+
+### D23 1リクエストで大量の所有者照合 — 段階 S3
+```sql
+SELECT max(resource.check_count) AS max_checks, average(resource.check_count) AS avg_checks, count(*)
+FROM Transaction WHERE appName = '{appName}' AND resource.check_count IS NOT NULL
+FACET api.operation, enduser.id SINCE 1 hour ago LIMIT 20
+```
+- GraphQL のエイリアス（`a1: order(id:1) a2: order(id:2) …`）や、WebSocket の1つのメッセージでの大量取得のように、**1回のリクエストで多数のリソースに触れる列挙**を見る。リクエスト数で数える D02・D03 には1件にしか見えない。
+- 判定: `max_checks` が 50 以上 → `strong`、20 以上 → `weak`（一覧取得の API は平常時の値を見て調整する）
+- 攻撃が成功した分は、所有者照合が1件でも一致しなければ `owner_match = false` のまま残るので D01 でも見える。
 
 ## B. SQL インジェクション
 
@@ -139,13 +160,14 @@ FACET name SINCE {since}
 
 ## C. 認証攻撃・AI エージェントらしい挙動
 
-### D10 認証失敗の急増 — 段階 S0 — 前提なし
+### D10 認証失敗の急増 — 段階 S0 — 前提なし — REST 専用（gRPC は `response.status` で読み替え）
 ```sql
 SELECT count(*) FROM Transaction
 WHERE appName = '{appName}' AND http.statusCode = 401
 FACET name SINCE 1 hour ago COMPARE WITH 1 week ago TIMESERIES 5 minutes
 ```
 - 判定: 先週同時刻の5倍以上 → `strong`、2倍以上 → `weak`
+- **REST 専用**: gRPC は `http.statusCode = 401` の代わりに `response.status = '16'`（UNAUTHENTICATED）で数える（属性の型は要検証）。GraphQL・SOAP・WebSocket では D22 を使う。
 
 ### D11 分散アクセス（少数アカウント × 多数のネットワーク）— 前提 NET, UID — 段階 S3
 ```sql
@@ -284,7 +306,7 @@ FACET transactionName, error.class SINCE {baseline}
 
 | attack_signal | 条件 |
 |---|---|
-| `strong` | D01・D07 が1件以上、または D02〜D06・D10・D11・D14・D20・D21 のいずれかが `strong` |
+| `strong` | D01・D07 が1件以上、または D02〜D06・D10・D11・D14・D20〜D23 のいずれかが `strong` |
 | `weak` | いずれかの検知が `weak` |
 | `none` | 実行できた検知がすべて `none` |
 | `unknown` → `none` として渡す | 前提不足で実行できなかった。**レポートに「判定不能」と明記する**（`none` と同じ扱いにするのはスコア上だけ） |

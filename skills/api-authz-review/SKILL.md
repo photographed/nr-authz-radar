@@ -35,6 +35,8 @@ Gateway の設定が無い場合は、「スコープ検証がコード外にあ
 - `@RestController` / `@Controller` 内の `@RequestMapping` / `@GetMapping` / `@PostMapping` / `@PutMapping` / `@PatchMapping` / `@DeleteMapping`（クラスとメソッドのパスを結合）
 - WebFlux の `RouterFunction`（`route(GET("/..."), handler)`）
 - JAX-RS（`@Path` + `@GET` 等）が混在していればそれも
+- **REST 以外の方式**（`shared/protocols.md` §4）: GraphQL（`@QueryMapping` 等、DGS、スキーマの `id: ID!`）、SOAP（`@PayloadRoot`、`@WebMethod`）、gRPC（`*ImplBase`）、WebSocket（`@MessageMapping` / `@SubscribeMapping`、`WebSocketHandler`、`@ServerEndpoint`）。
+  見落とすと棚卸しから丸ごと漏れる。エンドポイントの表記は同 §4（例: `GRAPHQL Query.order`、`WS SUBSCRIBE /topic/orders/{id}`）
 
 各エンドポイントについて: HTTP メソッド、パス、ハンドラ（`Class#method`）、パス変数、`@RequestBody` の型、戻り値の型。
 
@@ -60,7 +62,11 @@ Gateway の設定が無い場合は、「スコープ検証がコード外にあ
 | F7 SQLi | `@Query(nativeQuery = true)`、`JdbcTemplate`、`createNativeQuery`、`createQuery` での文字列連結 / `String.format` |
 | F8 過剰露出 | Entity をそのまま返す（DTO 無し）、`size` / `limit` に上限が無い |
 | F9 OS コマンドインジェクション | 外部入力（リクエストのパラメータ・ヘッダー・ボディ・アップロードされたファイル名）が `Runtime.exec` / `ProcessBuilder` に届く。特に `sh -c` / `cmd /c` に文字列連結で渡すもの |
+| F11 GraphQL の防御不足 | 本番で introspection が有効（無効化の設定が無い）、クエリの深さ・複雑さの上限が無い（`MaxQueryDepthInstrumentation` 等が無い）、エイリアス・バッチの数の上限が無い |
+| F12 WebSocket の防御不足 | `setAllowedOrigins("*")` / `setAllowedOriginPatterns("*")`（Cross-Site WebSocket Hijacking）、接続中にトークンの失効・取り消しを確かめない（接続時の1回だけの認証） |
 | F10 安全でないデシリアライズ | 外部入力を `ObjectInputStream.readObject` / `XMLDecoder` / XStream（許可リスト無し）で読む、Jackson の多態型を広く有効化（`enableDefaultTyping`、`@JsonTypeInfo(use = Id.CLASS)`）、SnakeYAML で `new Yaml()` を既定のまま外部入力に使う |
+
+WebSocket の **購読（subscribe）で他人の宛先を指定できる** ものは F4、**メッセージ単位の認可が無い**（接続時だけ確認している）ものは F2 として報告する。GraphQL の引数で ID を受け取るリゾルバは F4 の判定の対象。
 
 F9 / F10 は、入力の出どころ（リクエスト → メソッド呼び出しの連鎖）を辿り、**外部入力が届く場合だけ**報告する。届くか判断できない場合は `needs_review`。
 

@@ -2,6 +2,7 @@ package io.github.photographed.authzradar;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -15,7 +16,7 @@ import org.springframework.web.context.request.RequestContextHolder;
  *
  * <p>Rules that keep the data trustworthy:
  * <ul>
- *   <li>{@code deny} always wins over {@code allow}.</li>
+ *   <li>{@code deny} always wins over {@code allow}; the first known deny reason wins.</li>
  *   <li>{@code resource.owner_match} is sticky: once a mismatch is seen it stays {@code false}.</li>
  *   <li>Raw identifiers are never sent; they go through {@link Pseudonymizer}.</li>
  * </ul>
@@ -23,6 +24,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 public class AuthzTelemetry {
 
     private static final String STATE = AuthzTelemetry.class.getName() + ".state";
+    private static final int MAX_OPERATIONS = 3;
+
+    /** State for work outside an HTTP request (WebSocket messages, GraphQL over WebSocket). */
+    private static final ThreadLocal<State> SCOPED = new ThreadLocal<>();
 
     /** Which attributes to send. */
     public enum AttributeSet { MINIMAL, FULL }
@@ -108,13 +113,56 @@ public class AuthzTelemetry {
         boolean first = !AuthzAttributes.DENY.equals(s.decision);
         s.decision = AuthzAttributes.DENY;
         recorder.attribute(AuthzAttributes.DECISION, AuthzAttributes.DENY);
-        if (full && reason != null) {
-            recorder.attribute(AuthzAttributes.DENY_REASON, reason);
+        // The first known reason wins: an outer handler seeing the same exception must not
+        // overwrite "owner_mismatch" with a guess.
+        if (reason != null && s.denyReason == null) {
+            s.denyReason = reason;
+            if (full) {
+                recorder.attribute(AuthzAttributes.DENY_REASON, reason);
+            }
         }
         if (cause != null && first) {
             recorder.expectedError(cause,
                     reason == null ? Map.of() : Map.of(AuthzAttributes.DENY_REASON, reason));
         }
+    }
+
+    /**
+     * Opens a per-thread scope for work that has no HTTP request (e.g. a WebSocket message), so
+     * "deny wins" and the sticky owner_match still hold across calls. Nested scopes reuse the outer one.
+     */
+    public Scope scope() {
+        if (RequestContextHolder.getRequestAttributes() != null || SCOPED.get() != null) {
+            return () -> { };
+        }
+        SCOPED.set(new State());
+        return SCOPED::remove;
+    }
+
+    /** Closing a scope never throws. */
+    public interface Scope extends AutoCloseable {
+        @Override
+        void close();
+    }
+
+    public void transactionName(String category, String name) {
+        recorder.transactionName(category, name);
+    }
+
+    /**
+     * Records {@code api.protocol} and {@code api.operation} (shared/protocols.md). Sent in MINIMAL
+     * too: without them the status-code based detections cannot be interpreted for non-REST APIs.
+     * Several operations in one request (GraphQL) are joined, sorted, up to three.
+     */
+    public void protocol(String protocol, String operation) {
+        State s = state();
+        recorder.attribute(AuthzAttributes.PROTOCOL, protocol);
+        if (operation == null || operation.isBlank()) {
+            return;
+        }
+        s.operations.add(operation);
+        String joined = s.operations.stream().limit(MAX_OPERATIONS).collect(Collectors.joining(","));
+        recorder.attribute(AuthzAttributes.OPERATION, s.operations.size() > MAX_OPERATIONS ? joined + ",…" : joined);
     }
 
     public boolean decisionRecorded() {
@@ -129,13 +177,18 @@ public class AuthzTelemetry {
         if (!ownerMatches) {
             s.ownerMismatch = true;
         }
+        s.checkCount++;
         recorder.attribute(AuthzAttributes.OWNER_MATCH, !s.ownerMismatch);
+        if (full) {
+            recorder.attribute(AuthzAttributes.CHECK_COUNT, s.checkCount);
+        }
     }
 
     private State state() {
         RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
         if (attrs == null) {
-            return new State(); // outside a request: record without cross-call state
+            State scoped = SCOPED.get();
+            return scoped != null ? scoped : new State(); // no request and no scope: no cross-call state
         }
         State s = (State) attrs.getAttribute(STATE, RequestAttributes.SCOPE_REQUEST);
         if (s == null) {
@@ -149,5 +202,8 @@ public class AuthzTelemetry {
         String decision;
         String requiredScope;
         boolean ownerMismatch;
+        String denyReason;
+        int checkCount;
+        final TreeSet<String> operations = new TreeSet<>();
     }
 }
