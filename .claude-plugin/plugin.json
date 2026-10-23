@@ -1,6 +1,6 @@
 {
   "name": "nr-authz-radar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Detect and rank IDOR/BOLA, SQLi and AI-agent-driven API attacks with New Relic Ground Truth (MCP), and audit API authorization scopes in source code.",
   "author": {
     "name": "photographed"
@@ -8,5 +8,15 @@
   "homepage": "https://github.com/photographed/nr-authz-radar",
   "repository": "https://github.com/photographed/nr-authz-radar",
   "license": "MIT",
-  "keywords": ["newrelic", "ground-truth", "mcp", "owasp", "idor", "bola", "sqli", "authorization", "appsec"]
+  "keywords": [
+    "newrelic",
+    "ground-truth",
+    "mcp",
+    "owasp",
+    "idor",
+    "bola",
+    "sqli",
+    "authorization",
+    "appsec"
+  ]
 }

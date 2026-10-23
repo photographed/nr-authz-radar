@@ -137,12 +137,16 @@ python3 scripts/risk_score.py examples/findings.sample.json \
 
 ### New Relic MCP（Ground Truth）の接続
 
-`.mcp.json` に US と JP の2つを登録しています。認証は OAuth が標準です（初回接続時にブラウザで認可）。
+プラグインの `.mcp.json` には US リージョン（`newrelic-us` → `https://mcp.newrelic.com/mcp/`）を登録しています。
+認証は OAuth が標準です（初回接続時にブラウザで認可）。
 
-| サーバー名 | エンドポイント |
-|---|---|
-| `newrelic-us` | `https://mcp.newrelic.com/mcp/` |
-| `newrelic-jp` | 環境変数 `NR_MCP_JP_URL` で指定（**公式ドキュメントで URL を確認して設定してください**） |
+JP リージョンのアカウントを使う場合は、公式ドキュメントで JP のエンドポイント URL を確認し、`newrelic-jp` という名前で追加してください。
+
+```bash
+claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンドポイント URL>
+```
+
+> 未設定の環境変数を URL に使うと設定全体が無効になるため、JP は既定では登録していません。
 
 ## 方針
 
@@ -152,11 +156,11 @@ python3 scripts/risk_score.py examples/findings.sample.json \
 
 ## ロードマップ
 
-- [x] Phase 1: 共通仕様（属性、OWASP 対応、脅威モデル、ランキング）、Skill の骨組み、ランキングスクリプト
-- [x] Phase 2: Readiness 監査（R01〜R11）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
+- [x] **v0.1.0** Phase 1: 共通仕様（属性、OWASP 対応、脅威モデル、ランキング）、Skill の骨組み、ランキングスクリプト
+- [x] **v0.2.0** Phase 2: Readiness 監査（R01〜R11）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
 - [ ] Phase 3: Java（Spring Security）の計装サンプル、XML 候補の生成 → 以降、APM エージェント対応の全言語
 - [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
-- [ ] Phase 5: 攻撃シナリオでの検証
+- [ ] Phase 5: 攻撃シナリオでの検証 → **v1.0.0**
 
 ## 参考
 
