@@ -34,6 +34,25 @@ ATTACK_RANK = {"none": 0, "weak": 1, "strong": 2}
 CONFIDENCE_RANK = {"needs_review": 0, "likely": 1, "confirmed": 2}
 TIER_PRIORITY = {"Critical": 1, "High": 2, "Medium": 3, "Low": 4}
 
+STANDARDS_PATH = Path(__file__).resolve().parent.parent / "shared" / "standards.json"
+
+
+def load_standards() -> dict:
+    """Finding type -> CWE / ASVS / OWASP / OAT / IPA labels (shared/standards.json)."""
+    return json.loads(STANDARDS_PATH.read_text(encoding="utf-8"))["findings"]
+
+
+STANDARDS = load_standards()
+
+
+def standards_label(ftype: str) -> str:
+    s = STANDARDS.get(ftype, {})
+    parts = list(s.get("cwe", []))
+    parts += [f"ASVS {c}" for c in s.get("asvs", [])]
+    parts += s.get("owasp_top10", []) + s.get("owasp_api", []) + s.get("oat", [])
+    parts += [f"IPA {n}" for n in s.get("ipa", [])]
+    return " / ".join(parts)
+
 
 def clamp(v: int, lo: int = 0, hi: int = 5) -> int:
     return max(lo, min(hi, v))
@@ -172,6 +191,7 @@ def score(finding: dict, overrides: list[dict]) -> dict:
         "flags": flags,
         "first_action": first_action,
         "breakdown": breakdown,
+        "standards": STANDARDS.get(ftype, {}),
         "evidence": finding.get("evidence", []),
         "_sort": (
             priority,
@@ -194,14 +214,14 @@ def rank(findings: list[dict], overrides: list[dict] | None = None) -> list[dict
 
 
 def to_markdown(rows: list[dict]) -> str:
-    out = ["| # | Priority | Tier | Endpoint | Type | Score (I×E) | Attack | Traffic (rpm) | Flags | First action |",
-           "|---|---|---|---|---|---|---|---|---|---|"]
+    out = ["| # | Priority | Tier | Endpoint | Type | Score (I×E) | Attack | Traffic (rpm) | Flags | First action | Standards |",
+           "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
         traffic = "not observed" if r["traffic_rpm"] is None else r["traffic_rpm"]
         out.append(
             f"| {r['rank']} | {r['priority']} | {r['tier']} | `{r['endpoint']}` | {r['finding_type']} "
             f"| {r['inherent']} ({r['impact']}×{r['exploitability']}) | {r['attack_signal']} "
-            f"| {traffic} | {', '.join(r['flags']) or '-'} | {r['first_action']} |")
+            f"| {traffic} | {', '.join(r['flags']) or '-'} | {r['first_action']} | {standards_label(r['finding_type'])} |")
     return "\n".join(out)
 
 

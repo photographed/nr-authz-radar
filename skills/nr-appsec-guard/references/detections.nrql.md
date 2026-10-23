@@ -5,6 +5,8 @@ Hunt モードで実行するクエリ集。各検知は **前提条件**（`rea
 
 ## 表記
 
+- 各検知の CWE・ASVS・OWASP・OAT・IPA の対応は `shared/standards.json` の `detections` にある。報告時は必ず併記する。
+
 - `{appName}`: 対象アプリ名。`{since}`: 既定は `1 day ago`。`{baseline}`: 既定は `7 days ago`。
 - **要検証**: 構文・挙動を実アカウントで未確認のクエリ。Phase 5 で検証する。結果がエラーになった場合はクエリを簡略化して再試行し、その旨を報告する。
 - 判定は `strong` / `weak` / `none` / `unknown`（データ不足）。`api-authz-review` の `attack_signal` にそのまま渡せる。
