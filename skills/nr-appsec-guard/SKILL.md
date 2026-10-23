@@ -8,6 +8,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 SIEM でログを相関するのではなく、アプリ内部の文脈（認可判断・トランザクション・DB・Browser）で攻撃に気づく。
 
 プラグインのルートはこのファイルから `../../`。共通仕様:
+- `shared/data-sources.md` — 必要なデータソース、トランザクション名の品質、API 設計の突き合わせ
 - `shared/attribute-spec.md` — 検知の前提となる属性
 - `shared/owasp-mapping.md` — 脅威とシグナルの対応
 - `shared/threat-model-2026-jp.md` — 日本国内の最新の手口
@@ -35,7 +36,7 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 ユーザーの依頼から判定する。曖昧な場合は ① から始める。
 
 ### ① Readiness 監査（何が検知できる状態か）
-`references/readiness-checks.md` の R01〜R11 を順に実行する（R11 はプライバシー監査）。主な確認項目:
+`references/readiness-checks.md` の R01〜R12 を順に実行する（R11 はプライバシー監査、R12 はトランザクション名の品質）。主な確認項目:
 - 認可属性が届いているか、全エンドポイントに付いているか（計装漏れ）
 - High-security mode の有無（推定 + ユーザーに確認）
 - Browser / Mobile との分散トレーシング、Span の SQL 文、デプロイ記録

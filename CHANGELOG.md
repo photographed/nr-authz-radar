@@ -7,6 +7,12 @@
 
 ## [Unreleased]
 
+### Added
+- `shared/data-sources.md`: 必要なデータソース（必須 / 推奨 / 任意）、トランザクション名の品質基準、コード・サーバー・画面の3視点での API 突き合わせ
+- README に「前提: New Relic に必要なデータ」を追加。IAST（Limited Preview・申請制）を任意のデータソースとして記載
+- Readiness 監査 R12（トランザクション名の品質）
+- 検知 D19（画面から呼ばれている API の一覧。AjaxRequest）
+
 ## [0.2.0] - 2026-10-23
 
 ### Added

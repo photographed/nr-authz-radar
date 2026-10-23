@@ -13,6 +13,42 @@ IDOR は攻撃が成功すると **200 OK** で返ります。ログを集めて
 このプラグインは、その **計装の推奨** と、APM・Browser・Errors Inbox・Performance Risks Inbox を使った **検知**、
 そしてソースコードの **認可監査** をセットで提供します。
 
+## 前提: New Relic に必要なデータ
+
+**見える範囲は「何のデータが入っているか」で決まります。** まず APM と分散トレーシングで API の実態をつかみ、そこから範囲を広げます。
+Readiness 監査は、この表を上から順に確認して不足を指摘します。詳細は [`shared/data-sources.md`](shared/data-sources.md)。
+
+| 段階 | データソース | 主なイベント | これでできること |
+|---|---|---|---|
+| **必須** | APM エージェント | `Transaction`、`TransactionError` | API ごとのアクセス・ステータス・例外。**トランザクション名 = API エンドポイント** |
+| **必須** | 分散トレーシング | `Span` | API の中の SQL 文・外部呼び出し。画面から API までのつながり |
+| **必須** | 認可属性（コード計装） | `Transaction` の custom attribute | **IDOR 成功を見る唯一の手段**（[`shared/attribute-spec.md`](shared/attribute-spec.md)） |
+| 推奨 | Browser エージェント | `PageView`、`AjaxRequest` | 画面から実際に呼ばれている API の一覧。正規の画面を通った呼び出しかの判定 |
+| 推奨 | Logs in context | `Log` | トランザクションと結び付いたアプリのログ |
+| 推奨 | Change Tracking | デプロイ記録 | 「攻撃か、自分たちの変更か」の切り分け（iRCA の精度にも影響） |
+| 任意 | ミドルウェア・WAF・ファイアウォール・OS のログ | `Log` | クエリ文字列を含むリクエスト内容、エッジでの判定、侵入後の操作 |
+| 任意 | Infrastructure / Network Performance Monitoring | `SystemSample`、`ProcessSample` など | 侵入後の兆候（不審なプロセス・通信） |
+| 任意 | Vulnerability Management | — | 使っているライブラリの既知の脆弱性 |
+| 任意（申請制） | **IAST**（Limited Preview） | — | テスト環境でインジェクション系の脆弱性（RCE につながるものを含む）を検出し、コード監査の結果を裏付ける。**本番環境では使わない** |
+
+### トランザクション名が API 単位になっているか
+
+API 単位で認可を評価するには、**1つの API = 1つのトランザクション名**である必要があります。
+
+| 状態 | 例 |
+|---|---|
+| ✅ 良い | `WebTransaction/SpringController/api/v1/orders/{id} (GET)` |
+| ⚠️ まとめられすぎ | `WebTransaction/Servlet/dispatcherServlet`（全 API が同じ名前） |
+| ⚠️ 細かすぎ | `.../orders/12345 (GET)`（ID ごとに名前が分かれる） |
+
+### API 設計（Ajax を含む）を3つの視点で突き合わせる
+
+| 視点 | データ | ズレからわかること |
+|---|---|---|
+| コード | コード監査のエンドポイント一覧 | コードにあるのに観測されない → ゾンビ API |
+| サーバー | APM の `Transaction` | 観測されるのにコードにない → シャドー API |
+| 画面 | Browser の `AjaxRequest` | サーバーで呼ばれているのに画面からは呼ばれない → **直接呼び出しの可能性**（アプリ解析による API の特定） |
+
 ## 含まれる Skill
 
 | Skill | 役割 |
