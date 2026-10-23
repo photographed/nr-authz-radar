@@ -102,6 +102,15 @@ FACET name, resource.owner_match SINCE 1 hour ago
 | `newrelic.yml`（servlet-user 計装） | `enduser.id`（S1） | **生のユーザー名が送られる**（仮名化できない）。メールアドレスをユーザー名にしている場合は使わない |
 | XML（`instrumentation/java/examples/authz-extension.xml`） | 認可チェックのメソッドを計測対象にし、Span に出す（どの API で認可チェックが実行されたかが見える）。引数をそのまま属性にする | **値の比較ができないので `owner_match` は作れない**。High-security mode では使えない |
 
+XML の候補は、ソースコードから自動で作れる:
+
+```bash
+python3 <plugin-root>/scripts/gen_xml_candidates.py src/main/java --xml out/authz-extension.xml --report out/xml-candidates.md
+```
+
+`PermissionEvaluator` の実装、`@PreAuthorize("@bean.method(..)")` から呼ばれるメソッド（確度 high）、認可らしいクラスの `check*`・`verify*` 等（確度 medium）を拾う。
+正規表現による推定なので、**レポートを確認してから使う**。`@CheckOwnership` が付いたメソッドは除外する。
+
 XML で認可チェックのメソッドを計測すると、「その API で所有者照合が一度も実行されていない」ことが Span で分かる。
 コード監査の F4 を、実行時に裏付ける手段として使える。
 
@@ -111,6 +120,6 @@ XML で認可チェックのメソッドを計測すると、「その API で�
 |---|---|
 | Java | 17 以上 |
 | Spring Boot 3.5.16 / Spring Security 6.5 | ✅ テスト済み（単体テストと、MockMvc による結合テスト） |
-| Spring Boot 4.1.2 / Spring Security 7.1 | ⚠️ ライブラリのコンパイルのみ確認。テストは未実行（テスト用の依存関係の名前が 4.x で変わったため） |
+| Spring Boot 4.1.2 / Spring Security 7.1 | ✅ テスト済み（`./gradlew test -PspringBootVersion=4.1.2`） |
 | New Relic Java エージェント API | 9.5.0 |
 | WebFlux | ❌ 未対応（Spring MVC のみ） |

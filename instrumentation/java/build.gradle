@@ -28,9 +28,11 @@ dependencies {
     compileOnly 'org.springframework:spring-aop'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    // Spring Boot 4 renamed some starters: pick the right ones for the version under test.
+    def boot4 = springBootVersion.startsWith('4')
+    testImplementation "org.springframework.boot:${boot4 ? 'spring-boot-starter-webmvc' : 'spring-boot-starter-web'}"
     testImplementation 'org.springframework.boot:spring-boot-starter-security'
-    testImplementation 'org.springframework.boot:spring-boot-starter-aop'
+    testImplementation "org.springframework.boot:${boot4 ? 'spring-boot-starter-aspectj' : 'spring-boot-starter-aop'}"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

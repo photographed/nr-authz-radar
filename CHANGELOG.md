@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-23
+
+### Added
+- Java ライブラリを **Spring Boot 4.1.2 / Spring Security 7.1.2 でもテスト**（`-PspringBootVersion=4.1.2`）。テスト用の依存をバージョンで切り替え、MockMvc はバージョンに依存しない方法で組み立てる
+- `scripts/gen_xml_candidates.py`: Java のソースから認可チェックのメソッド（`PermissionEvaluator`、`@PreAuthorize` から呼ばれる Bean、認可らしい名前）を探し、XML 計装の候補とレポートを出す。引数は記録しない
+- Python・Node.js・Ruby・Go・PHP・.NET の S2 計装 `instrumentation/<言語>/` と `references/instrumentation-other-languages.md`
+  - API 名は各言語のエージェントのパッケージで確認（PHP を除く）。Go は本物の `*newrelic.Transaction` との互換をコンパイル時に確認
+  - Python・Node.js・Ruby・Go・PHP は単体テスト済み。.NET は未コンパイル
+- テスト `tests/test_languages.py`: 各言語のテストの実行、**全言語（Java を含む）で仮名化したユーザー ID が一致すること**、属性名が仕様どおりであること
+
 ## [0.6.0] - 2026-10-23
 
 ### Added
