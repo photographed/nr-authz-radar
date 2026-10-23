@@ -9,6 +9,7 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 
 プラグインのルートはこのファイルから `../../`。共通仕様:
 - `references/instrumentation-java.md` — Java の計装（S2 への最短経路）
+- `references/instrumentation-other-languages.md` — Python・Node.js・Ruby・Go・PHP・.NET の計装（S2）
 - `shared/goals.md` — **4つの目的・段階（S0〜S3）・レポートの書き方**（最初に読む）
 - `shared/data-sources.md` — 必要なデータソース、トランザクション名の品質、API 設計の突き合わせ
 - `shared/attribute-spec.md` — 検知の前提となる属性
@@ -75,7 +76,8 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 - 計装: `shared/attribute-spec.md` の **計装の手段**（yml → XML → API）から、最も手軽に済むものを推奨する。次の段階（S1〜S3）に進むために必要な作業として示す。
   コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。
   - Java（Spring Boot / Spring Security）: `references/instrumentation-java.md`。計装ライブラリ（`instrumentation/java/`）で **S2 に最短で到達**できる。まず OBSERVE モードを推奨する。
-  - 他の言語: 未整備。`shared/attribute-spec.md` の属性名を守って、各言語のエージェント API で実装するよう推奨する。
+  - Python・Node.js・Ruby・Go・PHP・.NET: `references/instrumentation-other-languages.md`（`instrumentation/<言語>/` のファイルを取り込む。PHP は API 名が未確認、.NET は未コンパイル）。
+  - XML（コード変更なし）: `scripts/gen_xml_candidates.py <src>` で認可チェックのメソッドを探し、XML の候補とレポートを出す。値の比較はできないので S2 にはならない。
 - アラート条件・Alert Workflow・Slack 通知: **前提の確認で判定した段階とデータソース**を使って、ファイルとして生成する（適用はユーザーが行う）。
   ```bash
   python3 <plugin-root>/scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out <出力先>

@@ -9,20 +9,21 @@ import io.github.photographed.authzradar.InMemoryRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.context.WebApplicationContext;
 
 /** Default settings, no HMAC key: stage S2 attributes only, and no user ID at all. */
 @SpringBootTest(classes = TestApp.class)
-@AutoConfigureMockMvc
 class MinimalAttributesIT {
 
-    @Autowired MockMvc mvc;
+    @Autowired WebApplicationContext context;
     @Autowired InMemoryRecorder nr;
+    MockMvc mvc;
 
     @BeforeEach
     void reset() {
+        mvc = MockMvcSupport.mockMvc(context);
         nr.reset();
     }
 

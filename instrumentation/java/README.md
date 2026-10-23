@@ -9,7 +9,7 @@ Sends the authorization attributes from [`shared/attribute-spec.md`](../../share
 
 ```bash
 ./gradlew build                                  # Spring Boot 3.5.16 (tested)
-./gradlew compileJava -PspringBootVersion=4.1.2  # Spring Boot 4.x (compile only)
+./gradlew test -PspringBootVersion=4.1.2         # Spring Boot 4.1 (tested)
 ```
 
 Not published to Maven Central yet. Usage (Japanese): [`instrumentation-java.md`](../../skills/nr-appsec-guard/references/instrumentation-java.md)

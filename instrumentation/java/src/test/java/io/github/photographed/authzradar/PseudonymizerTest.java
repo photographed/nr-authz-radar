@@ -24,6 +24,13 @@ class PseudonymizerTest {
     }
 
     @Test
+    void matchesTheOtherLanguages() {
+        // Same value as python/node/ruby/go/php (tests/test_languages.py): enduser.id stays
+        // comparable across services written in different languages.
+        assertThat(new Pseudonymizer("k").user("alice")).isEqualTo("u_ec631a55bb81f5b9");
+    }
+
+    @Test
     void withoutKeyNothingIsProduced() {
         assertThat(new Pseudonymizer(null).user("alice")).isNull();
         assertThat(new Pseudonymizer(" ").enabled()).isFalse();

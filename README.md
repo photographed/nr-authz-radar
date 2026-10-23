@@ -80,9 +80,21 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | `nr-appsec-guard` | 実行時: 前提の確認（段階とデータソース）、② 利用実態（U01〜U05）、③ 攻撃検知（D01〜D21。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、④ 調査（I01〜I07）、計装の推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
 | `api-authz-review` | ① 棚卸し（コード）: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・OS コマンドインジェクション・デシリアライズ・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
 
-## 計装ライブラリ（Java）
+## 計装（S2 への最短経路）
 
-S2（IDOR 成功の証拠）に最短で到達するための Spring Boot 用ライブラリを [`instrumentation/java/`](instrumentation/java/) に置いています。
+S2（IDOR 成功の証拠）に到達するためのコードを [`instrumentation/`](instrumentation/) に置いています。
+
+| 言語 | 形 | 状態 |
+|---|---|---|
+| **Java**（Spring Boot / Spring Security） | 計装ライブラリ（アノテーション1つで使える） | ✅ Spring Boot 3.5・4.1 でテスト済み |
+| Python・Node.js・Ruby・Go | 取り込める小さなファイル | ✅ 単体テスト済み（API は実パッケージで確認） |
+| PHP | 同上 | ⚠️ API 名が未確認 |
+| .NET | 同上 | ❌ 未コンパイル |
+
+全言語で、仮名化したユーザー ID が同じ値になります（サービスごとに言語が違っても同じユーザーを追える）。
+コードを変更できない Java アプリ向けには、認可チェックのメソッドを探して XML 計装の候補を作るスクリプト（`scripts/gen_xml_candidates.py`）もあります。
+
+### Java
 
 ```java
 @CheckOwnership(type = "order")          // データ取得メソッドに付けるだけ
@@ -92,9 +104,9 @@ public Order find(Long id) { ... }
 - 既定は **S2 の最小セット**（`authz.decision`・`resource.owner_match`・仮名化した `enduser.id`）。設定で S3 の全属性
 - **OBSERVE モード**（記録だけ）で本当に起きている IDOR を見つけてから、ENFORCE モード（拒否）に切り替えられる
 - 必要スコープは `@PreAuthorize` / `@Secured` から自動で取得。エンドポイントごとの記述は不要
-- Spring Boot 3.5 / Spring Security 6.5 でテスト済み。4.x はコンパイルのみ確認。Maven Central には未公開
+- Spring Boot 3.5（Spring Security 6.5）と 4.1（Spring Security 7.1）でテスト済み。Maven Central には未公開
 
-使い方は [`skills/nr-appsec-guard/references/instrumentation-java.md`](skills/nr-appsec-guard/references/instrumentation-java.md)。
+使い方は [`instrumentation-java.md`](skills/nr-appsec-guard/references/instrumentation-java.md)、他の言語は [`instrumentation-other-languages.md`](skills/nr-appsec-guard/references/instrumentation-other-languages.md)。
 
 ## アラートと通知
 
@@ -256,7 +268,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.3.0** 必要なデータソースの整理（R12、D19）、IAST との役割分担、RCE の一部（F9、F10、D20、D21）
 - [x] **v0.4.0** 4つの目的（棚卸し / 利用実態 / 攻撃検知 / 調査）と段階（S0〜S3）で再構成。利用実態 U01〜U05（D16・D19 を移動）、調査 I01〜I07、前提の確認 R13・R14。レポートを「今わかること」と「推奨」に分離
 - [x] **v0.5.0** Java（Spring Boot / Spring Security）の計装ライブラリ。S2 の最小セットが既定、OBSERVE / ENFORCE モード、設定例（`newrelic.yml`・XML）
-- [ ] Phase 3（残り）: XML 候補の生成、APM エージェント対応の他言語
+- [x] **v0.7.0** Spring Boot 4.1 でのテスト、XML 候補の自動生成、Python・Node.js・Ruby・Go・PHP・.NET の S2 計装
 - [x] **v0.6.0** Phase 4: アラート条件の生成（段階とデータソースに合わせる）・Alert Workflow・Slack・Workflow Automation の下書き（Autopilot / iRCA 分岐）・Autopilot のプロンプト・Knowledge 用ランブック
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 

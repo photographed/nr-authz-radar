@@ -9,22 +9,23 @@ import io.github.photographed.authzradar.InMemoryRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest(classes = TestApp.class, properties = {
         "nr.authz-radar.attributes=FULL",
         "nr.authz-radar.hmac-key=test-only-key",
         "nr.authz-radar.bypass-authorities=SCOPE_admin:read"})
-@AutoConfigureMockMvc
 class FullAttributesIT {
 
-    @Autowired MockMvc mvc;
+    @Autowired WebApplicationContext context;
     @Autowired InMemoryRecorder nr;
+    MockMvc mvc;
 
     @BeforeEach
     void reset() {
+        mvc = MockMvcSupport.mockMvc(context);
         nr.reset();
     }
 
