@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-23
+
+### Added
+- 英語対応: `README.en.md`、`docs/getting-started.en.md`、サンプルレポートの英語版。両 Skill に「ユーザーの言語で出力する」規則。`gen_alerts.py`・`gen_xml_candidates.py` に `--lang en`
+- `docs/getting-started.md`: 全体像（フォルダの役割、何が自動で何を人がやるか）、インストール手順、頼み方の例、`instrumentation/` の組み込み方、FAQ
+- サンプル: 意図的に脆弱にした `examples/sample-app/`（ビルドしない）と、それに対する実際のコード監査の結果（`docs/samples/`）。New Relic のレポートは架空のデータによる例であることを明記
+
 ## [0.8.0] - 2026-10-23
 
 ### Added

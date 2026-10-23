@@ -38,6 +38,11 @@ class XmlCandidatesTest(unittest.TestCase):
         names = {n.firstChild.data for n in doc.getElementsByTagName("className")}
         self.assertIn("com.example.security.AccessGuard", names)
 
+    def test_english_report(self):
+        report = gen.to_report(gen.find_candidates(SRC), "en")
+        self.assertIn("never records arguments", report)
+        self.assertNotRegex(report, r"[ぁ-んァ-ン]")
+
     def test_report_explains_limits(self):
         report = gen.to_report(gen.find_candidates(SRC))
         self.assertIn("引数は記録しない", report)

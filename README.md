@@ -5,6 +5,10 @@
 > Claude Code plugin that detects and ranks authorization attacks (IDOR/BOLA, scope abuse, SQLi, AI-agent-like scraping)
 > using New Relic Ground Truth (MCP), and audits API authorization scopes in source code.
 > Community project — not affiliated with or endorsed by New Relic.
+>
+> **English: [README.en.md](README.en.md) / [Getting started](docs/getting-started.en.md)**
+
+**はじめての方は [はじめに（インストールと使い方）](docs/getting-started.md) から。** 何が自動で何を人がやるか、頼み方の例、サンプルのレポートをまとめています。
 
 ## なぜ SIEM ではないのか
 
@@ -277,6 +281,8 @@ python3 scripts/risk_score.py examples/findings.sample.json \
 
 ## インストール
 
+詳しい手順（クラウドのセッションでの使い方を含む）は [docs/getting-started.md](docs/getting-started.md)。
+
 ```
 /plugin marketplace add photographed/nr-authz-radar
 /plugin install nr-authz-radar
@@ -311,6 +317,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.6.0** Phase 4: アラート条件の生成（段階とデータソースに合わせる）・Alert Workflow・Slack・Workflow Automation の下書き（Autopilot / iRCA 分岐）・Autopilot のプロンプト・Knowledge 用ランブック
 - [x] **v0.7.0** Spring Boot 4.1 でのテスト、XML 候補の自動生成、Python・Node.js・Ruby・Go・PHP・.NET の S2 計装
 - [x] **v0.8.0** REST 以外の方式（GraphQL・SOAP・gRPC・WebSocket・JSON-RPC）への対応: `api.protocol`・`api.operation`、方式に依存しない検知 D22・D23、R15、U06、F11・F12、Java ライブラリの GraphQL・STOMP 対応
+- [x] **v0.9.0** 英語対応（README・はじめに・サンプル・スクリプトの `--lang en`・Skill の出力言語）、はじめにのドキュメント、サンプルの実行結果
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考

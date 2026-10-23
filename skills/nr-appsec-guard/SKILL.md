@@ -20,6 +20,11 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 - `shared/privacy.md` — データ最小化・IP の扱い
 - `shared/standards.json` — 検知ごとの CWE・ASVS・OWASP・OAT・IPA
 
+## 出力の言語
+
+**ユーザーが使っている言語で出力する**（日本語なら日本語、英語なら英語）。参照する仕様書は日本語だが、それに引きずられない。
+属性名・検知の ID（D01 など）・CWE などの番号・コードは訳さない。スクリプトのレポートは `--lang en` で英語にできる（`gen_alerts.py`・`gen_xml_candidates.py`）。
+
 ## 守ること
 
 1. **New Relic へは読み取りのみ**。アラート・Workflow・Slack 設定は **ファイルとして生成するだけ**で、適用はユーザーが行う。
