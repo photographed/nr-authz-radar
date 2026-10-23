@@ -7,6 +7,19 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
+### Added
+- Java（Spring Boot / Spring Security）の計装ライブラリ `instrumentation/java/`（`io.github.photographed.authzradar`）
+  - `@CheckOwnership` と `Owned` で所有者照合を記録（OBSERVE / ENFORCE モード、管理者等の正当なアクセスの除外）
+  - 既定は S2 の最小セット（`authz.decision`・`resource.owner_match`・HMAC で仮名化した `enduser.id`）。`attributes: FULL` で S3
+  - 必要スコープを `@PreAuthorize` / `@Secured` から自動取得、Spring Security の拒否イベントを記録、拒否を expected error として送信
+  - HMAC の鍵が無いときは `enduser.id` を送らない
+  - 単体テストと MockMvc による結合テスト（Spring Boot 3.5.16 / Spring Security 6.5）。Spring Boot 4.1.2 はコンパイルのみ確認
+- `references/instrumentation-java.md`: 推奨の順番、OBSERVE から ENFORCE への切り替え、確認用 NRQL、コード変更なしでできることと限界
+- 設定例: `newrelic.yml`（分散トレーシング、`record_sql: obfuscated`、認証ヘッダー等の除外）、XML（認可チェックのメソッドを Span に出す）
+- テスト: Java の属性名の定数が `shared/attribute-spec.md` と一致しているかを確認
+
 ## [0.4.0] - 2026-10-23
 
 ### Added

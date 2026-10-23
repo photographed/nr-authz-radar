@@ -118,5 +118,7 @@ python3 <plugin-root>/scripts/risk_score.py findings.json --overrides criticalit
 **推奨**
 6. 修正の推奨（Finding ごとの修正パッチ案は 3 に付けたもの。ここでは優先度順の対応計画にまとめる）
 7. 計装の推奨（`shared/attribute-spec.md` の属性を、どのエンドポイントにどの計装の手段（yml / XML / API）で入れるか。**まず S2 の2属性**を、所有者照合が必要なエンドポイント（F4 の候補）に入れる）
+   - Java / Spring の場合は、F4 の候補ごとに **データ取得メソッドへ `@CheckOwnership(type = "...")` を付けるパッチ案**と、エンティティへの `Owned` の実装案を出す（`nr-appsec-guard` の `references/instrumentation-java.md`）。最初は OBSERVE モードを推奨する
+   - 所有者照合が無い F4 の候補は、修正（照合の追加）が本来の対策。計装は「どこで実際に起きているか」を確かめるためのもの、と区別して書く
 
 `dormant_critical` は「修正」ではなく「無効化または削除」を最初の対応として提示する。

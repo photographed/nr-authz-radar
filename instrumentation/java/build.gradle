@@ -1,0 +1,47 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.photographed'
+version = '0.4.0'
+
+
+repositories { mavenCentral() }
+
+ext {
+    springBootVersion = providers.gradleProperty('springBootVersion').getOrElse('3.5.16')
+    newRelicApiVersion = '9.5.0'
+}
+
+dependencies {
+    api platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+    annotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+
+    api "com.newrelic.agent.java:newrelic-api:${newRelicApiVersion}"
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    compileOnly 'org.springframework:spring-webmvc'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
+    compileOnly 'org.springframework.security:spring-security-core'
+    compileOnly 'org.springframework.security:spring-security-config'
+    compileOnly 'org.springframework.security:spring-security-oauth2-jose'
+    compileOnly 'org.aspectj:aspectjweaver'
+    compileOnly 'org.springframework:spring-aop'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.boot:spring-boot-starter-aop'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.compilerArgs << '-parameters'
+}
+tasks.named('test') {
+    useJUnitPlatform()
+    include '**/*Test.class', '**/*IT.class'
+    testLogging { events 'failed'; exceptionFormat 'full' }
+}

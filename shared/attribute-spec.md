@@ -76,4 +76,4 @@ resource.owner_match = false AND authz.decision = 'allow'
 
 Skill は ①→②→③ の順に「最も手軽に済む手段」を推奨し、③が必要な理由を明示する。
 「手段」はどう入れるか、`shared/goals.md` の「段階（S0〜S3）」はどこまで入れるか、という別の軸。
-言語別の実装例は `skills/nr-appsec-guard/references/instrumentation-<lang>.md`（Phase 3）。
+言語別の実装: Java は `skills/nr-appsec-guard/references/instrumentation-java.md` と計装ライブラリ `instrumentation/java/`（S2 は既定の `attributes: MINIMAL`、S3 は `FULL`）。他の言語は未整備。

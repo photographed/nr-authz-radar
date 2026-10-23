@@ -8,6 +8,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 SIEM でログを相関するのではなく、アプリ内部の文脈（認可判断・トランザクション・DB・Browser）で攻撃に気づく。
 
 プラグインのルートはこのファイルから `../../`。共通仕様:
+- `references/instrumentation-java.md` — Java の計装（S2 への最短経路）
 - `shared/goals.md` — **4つの目的・段階（S0〜S3）・レポートの書き方**（最初に読む）
 - `shared/data-sources.md` — 必要なデータソース、トランザクション名の品質、API 設計の突き合わせ
 - `shared/attribute-spec.md` — 検知の前提となる属性
@@ -72,7 +73,9 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 
 ### 推奨の作成（計装・アラート）
 - 計装: `shared/attribute-spec.md` の **計装の手段**（yml → XML → API）から、最も手軽に済むものを推奨する。次の段階（S1〜S3）に進むために必要な作業として示す。
-  コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。（Java の実装例は v0.5.0 で追加予定）
+  コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。
+  - Java（Spring Boot / Spring Security）: `references/instrumentation-java.md`。計装ライブラリ（`instrumentation/java/`）で **S2 に最短で到達**できる。まず OBSERVE モードを推奨する。
+  - 他の言語: 未整備。`shared/attribute-spec.md` の属性名を守って、各言語のエージェント API で実装するよう推奨する。
 - アラート条件・Alert Workflow・Workflow Automation・Slack 通知: テンプレートを **ファイルとして** 出力する（今後追加予定）。
 
 ## レポートの書き方（必ず守る）
