@@ -26,12 +26,13 @@
 | 基本値 | `max(data_sensitivity, privilege)` |
 | `bulk: true` | +1（一覧取得・エクスポート・上限なしの `size`） |
 | F7 (SQLi) | 最低4（エンドポイントのデータに関係なく DB 全体に届くため） |
+| F9 / F10 (RCE) | 最低5（サーバー全体が乗っ取られるため） |
 | `business_criticality` | critical → 最低5 / high → 最低4（人による上書き） |
 
 ### 攻撃のしやすさ
 | 入力 | 値 |
 |---|---|
-| Finding 種別ごとの基本値 | F1 5 / F2 3 / F3 3 / F4 4 / F5 4 / F6 3 / F7 5 / F8 2 |
+| Finding 種別ごとの基本値 | F1 5 / F2 3 / F3 3 / F4 4 / F5 4 / F6 3 / F7 5 / F8 2 / F9 5 / F10 4（悪用には gadget が必要なため1段低い） |
 | `auth_required: false`（F1 以外） | +1 |
 | F4 で `id_type: sequential` | +1（列挙が容易。AI エージェントが得意） |
 | F4 で `id_type: uuid` | −1（難しくなるが安全ではない） |

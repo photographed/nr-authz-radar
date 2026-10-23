@@ -10,7 +10,7 @@ Readiness 監査（`skills/nr-appsec-guard/references/readiness-checks.md`）は
 | 段階 | データソース | 主なイベント | これで見えるもの | 使う検知 |
 |---|---|---|---|---|
 | **必須** | **APM エージェント** | `Transaction`、`TransactionError` | API ごとのアクセス・ステータスコード・ユーザー・例外。**トランザクション名 = API エンドポイント**（§2） | D03、D04、D06、D09、D10、D16、D17 |
-| **必須** | **分散トレーシング（APM で有効化）** | `Span` | API の中で実行された SQL 文・外部呼び出し。Browser / Mobile から API までのつながり（`parent.type`） | D07、D08、D12 |
+| **必須** | **分散トレーシング（APM で有効化）** | `Span` | API の中で実行された SQL 文・外部呼び出し。Browser / Mobile から API までのつながり（`parent.type`） | D07、D08、D12、D20 |
 | **必須** | **認可属性（コード計装）** | `Transaction` の custom attribute | 誰が・どのスコープで・誰のデータに触れたか。**IDOR 成功を見る唯一の手段** | D01、D02、D05、D11、D13〜D15 |
 | 推奨 | **Browser エージェント** | `PageView`、`AjaxRequest`、`BrowserInteraction` | 画面から実際に呼ばれている API（Ajax）の一覧。**正規の画面を通った呼び出しか**の判定 | D12、D19 |
 | 推奨 | **Logs in context（アプリのログ）** | `Log`（`trace.id`・`span.id` 付き） | トランザクションと結び付いたアプリのログ。認可判断をログに出している場合の代替 | 属性が送れない場合の代替 |
@@ -19,7 +19,7 @@ Readiness 監査（`skills/nr-appsec-guard/references/readiness-checks.md`）は
 | 任意 | **WAF / ファイアウォール / CDN のログ** | `Log` | エッジでの判定（遮断・チャレンジ・bot 判定）。IP 粒度の分析はここに任せる（`shared/privacy.md`） | D11（`edge.verdict` の代わり） |
 | 任意 | **OS のログ**（auth.log・syslog 等） | `Log` | サーバーへのログイン、侵入後の操作 | 侵入後の調査 |
 | 任意 | **Infrastructure エージェント** | `SystemSample`、`ProcessSample`、`NetworkSample` | CPU・プロセス・通信量。**プロセス情報は既定で無効**のため、必要なら有効化 | 侵入後の兆候 |
-| 任意 | **Network Performance Monitoring** | フローデータ（イベント名は要確認） | ホスト間・外部との通信の流れ | 外部への不審な通信の裏付け |
+| 任意 | **Network Performance Monitoring** | フローデータ（イベント名は要確認） | ホスト間・外部との通信の流れ。**APM に出ない JNDI（LDAP / RMI）や DNS の通信**も含む | D20 の補完 |
 | 任意 | **Vulnerability Management** | — | 使っているライブラリの既知の脆弱性 | 予防（A03） |
 | 任意（申請制） | **IAST**（Limited Preview。Java は [New Relic Security Agent](https://github.com/newrelic/csec-java-agent)） | — | テスト環境でアプリを実際に動かして脆弱性を検出する。コード監査の Finding の**裏付け**に使う（§4） | コード監査（F7 など）の確度を上げる |
 
@@ -62,8 +62,8 @@ Java の IAST は [New Relic Security Agent for Java](https://github.com/newreli
 | 脆弱性 | IAST | このプラグイン |
 |---|---|---|
 | SQL インジェクション | ✅ 検出対象 | コード監査 F7、実行時の検知 D06〜D09 |
-| RCE、リバースシェル | ✅ 検出対象 | （v0.3.0 で追加予定） |
-| 安全でないデシリアライズ | ✅ 検出対象 | （v0.3.0 で追加予定） |
+| RCE、リバースシェル | ✅ 検出対象 | コード監査 F9、実行時の検知 D20・D21 |
+| 安全でないデシリアライズ | ✅ 検出対象 | コード監査 F10、実行時の検知 D21 |
 | NoSQL / LDAP / XPath / XQuery / JavaScript インジェクション、XSS、SSRF、ファイルアクセス、弱い暗号 など | ✅ 検出対象 | 対象外（IAST の結果を参照するよう案内する） |
 | **IDOR / BOLA、スコープ不備、BFLA** | ❌ 一覧に無い | ✅ **中心的に対応**（コード監査 F2〜F5、実行時の検知 D01〜D05） |
 

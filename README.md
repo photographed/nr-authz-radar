@@ -53,8 +53,8 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 
 | Skill | 役割 |
 |---|---|
-| `nr-appsec-guard` | 実行時: Readiness 監査、Hunt（NRQL による検知）、計装推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
-| `api-authz-review` | コード: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
+| `nr-appsec-guard` | 実行時: Readiness 監査、Hunt（NRQL による検知。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、計装推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
+| `api-authz-review` | コード: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・OS コマンドインジェクション・デシリアライズ・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
 
 ## 対応範囲（何をカバーし、何をカバーしないか）
 
@@ -71,10 +71,10 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | A02 Security Misconfiguration | △ | `permitAll` 等のセキュリティ設定の漏れ（F1）、監視設定（High-security mode・`record_sql`）の確認 | サーバー・ミドルウェア・クラウドの設定監査 |
 | A03 Software Supply Chain Failures | × | New Relic Vulnerability Management の結果を参照するよう案内するのみ | SBOM・依存関係の脆弱性スキャン |
 | A04 Cryptographic Failures | × | — | 暗号方式・鍵管理・TLS 設定の監査 |
-| A05 Injection | ○ | **SQL インジェクションのみ**（F7、D06–D09） | XSS・OS コマンド・LDAP・テンプレート等の他のインジェクション |
+| A05 Injection | ○ | **SQL インジェクション**（F7、D06–D09）と **OS コマンドインジェクション・RCE の兆候**（F9、D20、D21） | XSS・LDAP・テンプレート等の他のインジェクション（IAST の結果を参照） |
 | A06 Insecure Design | △ | Mass Assignment（F6）、上限のない一覧取得（F8）、脅威モデル | 設計レビュー全般 |
 | A07 Authentication Failures | ○ | 認証なしの API（F1）、認証失敗の急増（D10）、長寿命トークン（D15）、API キーの異常利用（D14） | パスワードポリシー・MFA・セッション管理の監査 |
-| A08 Software or Data Integrity Failures | × | — | CI/CD・署名・デシリアライズの検証 |
+| A08 Software or Data Integrity Failures | △ | **安全でないデシリアライズのみ**（F10、D21） | CI/CD・署名・更新の完全性の検証 |
 | A09 Security Logging and Alerting Failures | ◎ | Readiness 監査（R01–R11）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
 | A10 Mishandling of Exceptional Conditions | △ | 新しい種類の例外の出現（D17）、Errors Inbox の活用 | 例外処理のコード監査全般 |
 
@@ -136,6 +136,8 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | F6 Mass Assignment | CWE-915 | V15 | A06, API3 | — |
 | F7 SQL インジェクション | CWE-89 | V1 | A05 | 1.1 |
 | F8 過剰なデータ露出・上限のない取得 | CWE-213, CWE-770 | V14, V2 | A06, API3, API4 | — |
+| F9 OS コマンドインジェクション | CWE-78 | V1 | A05 | 1.2 |
+| F10 安全でないデシリアライズ | CWE-502 | V1 | A08 | — |
 
 検知（D01〜D18）の対応は `shared/standards.json` を参照してください。
 OAT と AI エージェントの結び付けは本プラグインの分析であり、OWASP の公式な位置付けではありません。
@@ -194,9 +196,10 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 
 - [x] **v0.1.0** Phase 1: 共通仕様（属性、OWASP 対応、脅威モデル、ランキング）、Skill の骨組み、ランキングスクリプト
 - [x] **v0.2.0** Phase 2: Readiness 監査（R01〜R11）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
+- [x] **v0.3.0** 必要なデータソースの整理（R12、D19）、IAST との役割分担、RCE の一部（F9、F10、D20、D21）
 - [ ] Phase 3: Java（Spring Security）の計装サンプル、XML 候補の生成 → 以降、APM エージェント対応の全言語
 - [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
-- [ ] Phase 5: 攻撃シナリオでの検証 → **v1.0.0**
+- [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考
 

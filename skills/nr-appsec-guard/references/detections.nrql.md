@@ -242,13 +242,63 @@ WHERE entity.name = '{appName}' SINCE {baseline} LIMIT 20
 
 ---
 
+## E. RCE（リモートコード実行）
+
+RCE は「コードが実行された瞬間」を APM で確実に見ることはできない。ここでは **攻撃の試み（D21）** と **成功後の不審な外部通信（D20）** で気づく。
+両方が同じ時間帯・同じアプリで出た場合は、RCE の可能性が高い。
+
+### D20 見たことのない外部への通信 — 前提 SPAN — 要検証
+```sql
+SELECT count(*), earliest(timestamp) AS first_seen FROM Span
+WHERE entity.name = '{appName}' AND span.kind = 'client' AND category = 'http'
+FACET peer.hostname SINCE 30 days ago LIMIT MAX
+```
+- `first_seen` が直近 `{since}` 以内の宛先 = **新しい外部の宛先**。
+- 宛先の属性名はエージェントのバージョンで異なる可能性がある（`peer.hostname` / `server.address` / `http.url`）。結果が空なら読み替えて再実行する。
+- 判定:
+  - `strong`: 新しい宛先が、D21 と同じ時間帯（前後1時間）に出現した。または、攻撃の確認によく使われるサービス（`oast.` / `interact.sh` / `burpcollaborator` / `ngrok` / `requestbin` 等）や IP アドレス直指定の宛先
+  - `weak`: 新しい宛先だけが出現した（正当な連携の追加でも起きるので、D18 で直前のデプロイを確認する）
+- **見えないもの**: APM の外部呼び出しの計測は主に HTTP。**JNDI の LDAP / RMI 接続や DNS による確認は Span に出ない可能性が高い**。
+  それらを見るには、Network Performance Monitoring・ファイアウォールのログ・Infrastructure の `NetworkSample` が必要（`shared/data-sources.md`）。
+
+### D21 RCE の試みで出る例外 — 前提なし
+```sql
+SELECT count(*), earliest(timestamp) AS first_seen FROM TransactionError
+WHERE appName = '{appName}' AND (
+  error.class IN ('java.io.InvalidClassException',
+                  'java.io.StreamCorruptedException',
+                  'com.fasterxml.jackson.databind.exc.InvalidTypeIdException',
+                  'com.thoughtworks.xstream.converters.ConversionException',
+                  'org.springframework.expression.spel.SpelEvaluationException',
+                  'org.springframework.expression.spel.SpelParseException',
+                  'ognl.OgnlException',
+                  'javax.naming.NamingException',
+                  'javax.naming.CommunicationException',
+                  'freemarker.core.InvalidReferenceException',
+                  'org.apache.velocity.exception.ParseErrorException')
+  OR error.message LIKE '%Cannot run program%'
+  OR error.message LIKE '%jndi:%'
+  OR error.message LIKE '%java.lang.Runtime%'
+  OR error.message LIKE '%commons.collections%'
+  OR error.message LIKE '%ysoserial%'
+)
+FACET transactionName, error.class SINCE {baseline}
+```
+- 着眼点: RCE の攻撃は、**失敗した試み**のときに特有の例外を残す（不正なデータの読み込み・式言語の解釈・JNDI の名前解決・コマンドの起動の失敗）。
+  Errors Inbox では新しいエラーグループとして現れる。
+- 判定:
+  - `strong`: 同じトランザクションで1時間に5件以上、または異なる種類の例外が2つ以上、または D20 と同時
+  - `weak`: `first_seen` が直近 `{since}` 以内（初めて出た）
+- 誤検知: 正当な入力ミスでも `SpelEvaluationException` 等は出る。平常時の件数（`{baseline}`）と比べる。
+- 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
+
 ## エンドポイント別 `attack_signal` の決め方（api-authz-review 連携）
 
 トランザクション名ごとに、上の検知結果の最大値を採用する。
 
 | attack_signal | 条件 |
 |---|---|
-| `strong` | D01・D07 が1件以上、または D02〜D06・D10・D11・D14 のいずれかが `strong` |
+| `strong` | D01・D07 が1件以上、または D02〜D06・D10・D11・D14・D20・D21 のいずれかが `strong` |
 | `weak` | いずれかの検知が `weak` |
 | `none` | 実行できた検知がすべて `none` |
 | `unknown` → `none` として渡す | 前提不足で実行できなかった。**レポートに「判定不能」と明記する**（`none` と同じ扱いにするのはスコア上だけ） |
