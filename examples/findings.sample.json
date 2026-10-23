@@ -1,0 +1,34 @@
+{
+  "findings": [
+    {
+      "id": "F4-001", "endpoint": "GET /api/v1/orders/{id}", "finding_type": "F4", "confidence": "likely",
+      "features": { "data_sensitivity": "personal", "privilege": "user", "auth_required": true, "id_type": "sequential", "exposure": "mobile" },
+      "runtime": { "traffic_rpm": 120.0, "attack_signal": "none" },
+      "evidence": [{ "file": "src/main/java/com/example/order/OrderController.java", "line": 42 }]
+    },
+    {
+      "id": "F4-002", "endpoint": "GET /api/v0/members/{id}/profile", "finding_type": "F4", "confidence": "likely",
+      "features": { "data_sensitivity": "sensitive_personal", "privilege": "user", "auth_required": true, "id_type": "sequential", "exposure": "mobile" },
+      "runtime": { "traffic_rpm": 0, "attack_signal": "none" },
+      "evidence": [{ "file": "src/main/java/com/example/member/LegacyMemberController.java", "line": 18 }]
+    },
+    {
+      "id": "F7-001", "endpoint": "GET /api/v1/search", "finding_type": "F7", "confidence": "confirmed",
+      "features": { "data_sensitivity": "internal", "privilege": "user", "auth_required": true, "exposure": "external" },
+      "runtime": { "traffic_rpm": 30.0, "attack_signal": "weak" },
+      "evidence": [{ "file": "src/main/java/com/example/search/SearchRepository.java", "line": 77 }]
+    },
+    {
+      "id": "F2-001", "endpoint": "POST /internal/batch/recalc", "finding_type": "F2", "confidence": "needs_review",
+      "features": { "data_sensitivity": "internal", "privilege": "elevated", "auth_required": true, "exposure": "unknown" },
+      "runtime": { "traffic_rpm": null, "attack_signal": "none" },
+      "evidence": [{ "file": "src/main/java/com/example/batch/BatchController.java", "line": 25 }]
+    },
+    {
+      "id": "F8-001", "endpoint": "GET /api/v1/products", "finding_type": "F8", "confidence": "likely",
+      "features": { "data_sensitivity": "none", "privilege": "none", "bulk": true, "auth_required": false, "exposure": "external" },
+      "runtime": { "traffic_rpm": 900.0, "attack_signal": "none" },
+      "evidence": [{ "file": "src/main/java/com/example/product/ProductController.java", "line": 31 }]
+    }
+  ]
+}

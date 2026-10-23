@@ -1,0 +1,4 @@
+[
+  { "path": "/api/v1/payments/**", "business_criticality": "critical" },
+  { "path": "/internal/batch/**", "exposure": "internal_only", "gateway_enforced": true }
+]

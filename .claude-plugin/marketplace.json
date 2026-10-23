@@ -1,0 +1,13 @@
+{
+  "name": "nr-authz-radar",
+  "owner": {
+    "name": "photographed"
+  },
+  "plugins": [
+    {
+      "name": "nr-authz-radar",
+      "source": "./",
+      "description": "New Relic Ground Truth (MCP) based detection and ranking of authorization attacks (IDOR/BOLA, SQLi, AI-agent scraping) plus source-code scope audit."
+    }
+  ]
+}
