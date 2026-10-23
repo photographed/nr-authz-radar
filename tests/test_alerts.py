@@ -69,6 +69,18 @@ class GeneratorTest(unittest.TestCase):
         for query in re.findall(r'query = "(.*)"', tf):
             self.assertNotRegex(query.replace("${var.", ""), r"(?<![$%])[$%]\{", query)
 
+    def test_english_report(self):
+        out = Path(tempfile.mkdtemp())
+        gen_alerts.generate("S0", set(), out, "en")
+        report = (out / "SKIPPED.md").read_text()
+        self.assertIn("## Recommendations", report)
+        self.assertIn("Evidence of a successful IDOR", report)
+        self.assertNotRegex(report, r"[ぁ-んァ-ン]")   # no Japanese left
+
+    def test_every_alert_has_an_english_name(self):
+        for a in CATALOG["alerts"]:
+            self.assertTrue(a.get("name_en"), a["id"])
+
     def test_static_terraform_is_copied(self):
         out, _, _ = self.run_gen("S0", [])
         for name in ("versions.tf", "variables.tf", "main.tf", "workflows.tf", "alerts.tf"):

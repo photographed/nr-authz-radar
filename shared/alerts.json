@@ -18,7 +18,8 @@
       "critical": {
         "operator": "above",
         "threshold": 0
-      }
+      },
+      "name_en": "Evidence of a successful IDOR"
     },
     {
       "id": "D02",
@@ -36,7 +37,8 @@
       "warning": {
         "operator": "above",
         "threshold": 5
-      }
+      },
+      "name_en": "Attempts to access others' resources"
     },
     {
       "id": "D03",
@@ -54,7 +56,8 @@
       "warning": {
         "operator": "above",
         "threshold": 15
-      }
+      },
+      "name_en": "ID enumeration"
     },
     {
       "id": "D04",
@@ -72,7 +75,8 @@
       "warning": {
         "operator": "above",
         "threshold": 3
-      }
+      },
+      "name_en": "Surge in 403 / 404 ratio"
     },
     {
       "id": "D06",
@@ -90,7 +94,8 @@
       "warning": {
         "operator": "above",
         "threshold": 0
-      }
+      },
+      "name_en": "Database syntax errors"
     },
     {
       "id": "D07",
@@ -106,7 +111,8 @@
       "critical": {
         "operator": "above",
         "threshold": 0
-      }
+      },
+      "name_en": "Injected-looking SQL statements"
     },
     {
       "id": "D10",
@@ -124,7 +130,8 @@
       "warning": {
         "operator": "above",
         "threshold": 3
-      }
+      },
+      "name_en": "Surge in authentication failures"
     },
     {
       "id": "D11",
@@ -142,7 +149,8 @@
       "warning": {
         "operator": "above",
         "threshold": 4
-      }
+      },
+      "name_en": "Few accounts from many networks"
     },
     {
       "id": "D12",
@@ -158,7 +166,8 @@
       "warning": {
         "operator": "above",
         "threshold": 3
-      }
+      },
+      "name_en": "API calls that bypass the browser"
     },
     {
       "id": "D21",
@@ -176,7 +185,8 @@
       "warning": {
         "operator": "above",
         "threshold": 0
-      }
+      },
+      "name_en": "Exceptions from RCE attempts"
     },
     {
       "id": "D22",
@@ -194,7 +204,8 @@
       "warning": {
         "operator": "above",
         "threshold": 3
-      }
+      },
+      "name_en": "Surge in authorization denials (protocol-neutral)"
     },
     {
       "id": "D23",
@@ -212,7 +223,8 @@
       "warning": {
         "operator": "above",
         "threshold": 19
-      }
+      },
+      "name_en": "Many ownership checks in one request"
     }
   ],
   "hunt_only": {

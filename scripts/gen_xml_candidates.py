@@ -129,7 +129,21 @@ def to_xml(candidates: list[Candidate]) -> str:
     return "\n".join(out)
 
 
-def to_report(candidates: list[Candidate]) -> str:
+REPORT_EN = ["# XML instrumentation candidates", "",
+             "Methods that look like authorization checks, found with regular expressions. **Review before using the XML.**", "",
+             "- The XML only records method calls as spans; it never records arguments.",
+             "- It shows at runtime which APIs never ran an authorization check (backs up code-review finding F4).",
+             "- It cannot produce `resource.owner_match` (comparing values needs code).", "",
+             "| Confidence | Class | Method | Location | Reason |", "|---|---|---|---|---|"]
+
+
+def to_report(candidates: list[Candidate], lang: str = "ja") -> str:
+    if lang == "en":
+        out = list(REPORT_EN)
+        out += [f"| {c.confidence} | `{c.class_name}` | `{c.method}` | `{c.file}:{c.line}` | {c.reason} |" for c in candidates]
+        if not candidates:
+            out.append("| — | none found | — | — | authorization checks may be implemented differently, or may be missing |")
+        return "\n".join(out) + "\n"
     out = ["# XML 計装の候補", "",
            "認可チェックらしいメソッドを、ソースコードから正規表現で探した結果。**XML を使う前に確認すること。**", "",
            "- XML はメソッドの実行を Span として記録するだけで、引数は記録しない。",
@@ -147,9 +161,10 @@ def main() -> None:
     ap.add_argument("src")
     ap.add_argument("--xml", required=True)
     ap.add_argument("--report", required=True)
+    ap.add_argument("--lang", choices=["ja", "en"], default="ja", help="language of the report")
     args = ap.parse_args()
     candidates = find_candidates(Path(args.src))
-    for target, content in ((args.xml, to_xml(candidates)), (args.report, to_report(candidates))):
+    for target, content in ((args.xml, to_xml(candidates)), (args.report, to_report(candidates, args.lang))):
         Path(target).parent.mkdir(parents=True, exist_ok=True)
         Path(target).write_text(content, encoding="utf-8")
     print(f"{len(candidates)} candidates ({sum(c.confidence == 'high' for c in candidates)} high)")
