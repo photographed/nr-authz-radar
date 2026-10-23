@@ -52,5 +52,24 @@ class StandardsMappingTest(unittest.TestCase):
                 self.assertIn(cwe, readme, f"README is missing {cwe} ({key})")
 
 
+class VersioningTest(unittest.TestCase):
+    def test_changelog_matches_plugin_version(self):
+        import json
+        version = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())["version"]
+        self.assertRegex(version, r"^\d+\.\d+\.\d+$")
+        self.assertIn(f"## [{version}]", (ROOT / "CHANGELOG.md").read_text())
+
+    def test_no_stray_doc_versions(self):
+        for path in list((ROOT / "shared").glob("*.md")) + list((ROOT / "skills").rglob("*.md")):
+            first = path.read_text().splitlines()[0]
+            self.assertNotRegex(first, r"\(v\d", f"{path.name}: version belongs in plugin.json / CHANGELOG.md")
+
+    def test_mcp_urls_are_literal(self):
+        import json
+        servers = json.loads((ROOT / ".mcp.json").read_text())["mcpServers"]
+        for name, cfg in servers.items():
+            self.assertTrue(cfg["url"].startswith("https://"), f"{name}: URL must not depend on unset env vars")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -3,10 +3,6 @@
     "newrelic-us": {
       "type": "http",
       "url": "https://mcp.newrelic.com/mcp/"
-    },
-    "newrelic-jp": {
-      "type": "http",
-      "url": "${NR_MCP_JP_URL}"
     }
   }
 }
