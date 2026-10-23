@@ -20,6 +20,62 @@ IDOR は攻撃が成功すると **200 OK** で返ります。ログを集めて
 | `nr-appsec-guard` | 実行時: Readiness 監査、Hunt（NRQL による検知）、計装推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
 | `api-authz-review` | コード: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
 
+## 対応範囲（何をカバーし、何をカバーしないか）
+
+**このプラグインは、アプリケーション層の「認可・認証・インジェクション」と「それに気づくための監視」に絞っています。**
+すべての項目に対応しているわけではありません。対象外の領域は、それぞれ専用のツールや対策と組み合わせてください。
+
+凡例: ◎ 中心的に対応 / ○ 主要部分に対応 / △ 一部のみ / × 対象外
+
+### OWASP Top 10:2025
+
+| 項目 | 対応 | このプラグインでやること | やらないこと |
+|---|---|---|---|
+| A01 Broken Access Control | ◎ | IDOR / BOLA・スコープ不備・BFLA のコード監査（F2–F5）と実行時検知（D01–D05） | — |
+| A02 Security Misconfiguration | △ | `permitAll` 等のセキュリティ設定の漏れ（F1）、監視設定（High-security mode・`record_sql`）の確認 | サーバー・ミドルウェア・クラウドの設定監査 |
+| A03 Software Supply Chain Failures | × | New Relic Vulnerability Management の結果を参照するよう案内するのみ | SBOM・依存関係の脆弱性スキャン |
+| A04 Cryptographic Failures | × | — | 暗号方式・鍵管理・TLS 設定の監査 |
+| A05 Injection | ○ | **SQL インジェクションのみ**（F7、D06–D09） | XSS・OS コマンド・LDAP・テンプレート等の他のインジェクション |
+| A06 Insecure Design | △ | Mass Assignment（F6）、上限のない一覧取得（F8）、脅威モデル | 設計レビュー全般 |
+| A07 Authentication Failures | ○ | 認証なしの API（F1）、認証失敗の急増（D10）、長寿命トークン（D15）、API キーの異常利用（D14） | パスワードポリシー・MFA・セッション管理の監査 |
+| A08 Software or Data Integrity Failures | × | — | CI/CD・署名・デシリアライズの検証 |
+| A09 Security Logging and Alerting Failures | ◎ | Readiness 監査（R01–R11）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
+| A10 Mishandling of Exceptional Conditions | △ | 新しい種類の例外の出現（D17）、Errors Inbox の活用 | 例外処理のコード監査全般 |
+
+### OWASP API Security Top 10:2023
+
+| 項目 | 対応 | 内容 |
+|---|---|---|
+| API1 Broken Object Level Authorization | ◎ | F4、D01–D03 |
+| API2 Broken Authentication | ○ | F1、D10、D14、D15 |
+| API3 Broken Object Property Level Authorization | ○ | F6（Mass Assignment）、F8（過剰なデータ露出） |
+| API4 Unrestricted Resource Consumption | △ | 上限のない `size`（F8）、自動化された大量アクセス（D11、D13） |
+| API5 Broken Function Level Authorization | ◎ | F5、D05 |
+| API6 Unrestricted Access to Sensitive Business Flows | △ | 業務トランザクションの異常頻度（検知の考え方のみ） |
+| API7 Server Side Request Forgery | × | — |
+| API8 Security Misconfiguration | △ | A02 と同じ |
+| API9 Improper Inventory Management | ○ | シャドー API / ゾンビ API の突き合わせ（D16 + コード監査） |
+| API10 Unsafe Consumption of APIs | × | — |
+
+### CIS
+
+| 対象 | 対応 | 理由 |
+|---|---|---|
+| **CIS Benchmarks** | **×（対象外）** | OS・クラウド・Kubernetes・DB などの製品ごとの設定堅牢化ガイドで、本プラグインが扱うアプリ層の認可・検知とは対象が異なるため。CIS-CAT や各クラウドの設定監査ツールを使ってください |
+| **CIS Controls v8** | △（参考として一部） | 下表の Safeguard に関連する作業を支援する。**準拠や認証の根拠にはなりません** |
+
+| CIS Controls v8 の Safeguard | 本プラグインとの関係 |
+|---|---|
+| 3.14 Log Sensitive Data Access | 機微データへのアクセスを認可属性として記録する（`shared/attribute-spec.md`） |
+| 6.8 Define and Maintain Role-Based Access Control | エンドポイントとスコープ・ロールの一覧表（コード監査の出力） |
+| 8.5 Collect Detailed Audit Logs / 8.11 Conduct Audit Log Reviews | 認可判断の記録と、Hunt モードによる定期的な確認 |
+| 13.1 Centralize Security Event Alerting | アラート・Workflow・Slack 通知の生成 |
+| 16.12 Implement Code-Level Security Checks | ソースコードの認可監査（`api-authz-review`） |
+| 16.14 Conduct Threat Modeling | 脅威モデル（`shared/threat-model-2026-jp.md`） |
+| 17.4 Establish and Maintain an Incident Response Process | Knowledge 用ランブック、Autopilot / iRCA 連携（Phase 4） |
+
+> Safeguard の番号は CIS Controls v8 / v8.1 に基づく。採用しているバージョンの原文で確認すること。
+
 ## 優先順位の考え方
 
 ```
