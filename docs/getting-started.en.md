@@ -145,6 +145,7 @@ Run it from cron or CI. You can let Claude read the summary to interpret it (che
 | Is it useless without custom attributes? | No. Much works at stage S0 (inventory, usage, SQL injection and RCE signals, and more). **Only evidence of a successful IDOR needs the two stage S2 attributes** |
 | What about GraphQL, WebSocket and others? | Supported, but status-code based detections are REST-only. Details: [`shared/protocols.md`](../shared/protocols.md) (Japanese) |
 | Can I use it in English? | Yes. Ask in English and Claude answers in English. Script reports take `--lang en`. The reference specs are in Japanese, which Claude reads fine |
+| Does it use logs? | As the last mile only. **Never scanned**: fetched within the scope of APM evidence (trace ID, user, time window) — L01–L04 |
 | Won't it produce lots of false positives? | Results are split by evidence level. Only *evidence* (D01, D07) and *strong signals* notify; volume or ratio *anomalies* do not notify by default. See [`docs/how-it-works.md`](how-it-works.md) (Japanese) |
 | What about cost? | Scheduled hunts use `hunt.py` without AI; Autopilot is called only from evidence-level alerts. See [`shared/cost.md`](../shared/cost.md) (Japanese) |
 | How well is it validated? | Scripts and instrumentation code are tested. **NRQL, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (planned in Phase 5) |

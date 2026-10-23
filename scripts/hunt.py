@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG_MD = ROOT / "skills" / "nr-appsec-guard" / "references" / "detections.nrql.md"
 DETECTIONS = ROOT / "shared" / "detections.json"
 STAGES = ["S0", "S1", "S2", "S3"]
-SOURCES = ("spans", "browser_dt", "deployments", "logs")
+SOURCES = ("spans", "browser_dt", "browser_user", "deployments", "logs")
 ENDPOINTS = {"US": "https://api.newrelic.com/graphql", "EU": "https://api.eu.newrelic.com/graphql"}
 LEVEL_ORDER = ["evidence", "strong", "anomaly", "risk", "context"]
 # Values that identify people or resources: shown as a short prefix in the summary only.
@@ -40,15 +40,23 @@ GRAPHQL = ("query($accountId: Int!, $nrql: Nrql!) "
            "{ actor { account(id: $accountId) { nrql(query: $nrql, timeout: 60) { results } } } }")
 
 
+def _clean(sql: str) -> str:
+    return " ".join("\n".join(l for l in sql.splitlines() if not l.strip().startswith("--")).split())
+
+
+def parse_all(text: str) -> dict[str, list[str]]:
+    """Detection ID -> every SQL block of its section, in order."""
+    out = {}
+    for m in re.finditer(r"^### (D\d{2}) .*?$(.*?)(?=^### |^## |\Z)", text, re.M | re.S):
+        blocks = [_clean(b) for b in re.findall(r"```sql\n(.*?)```", m.group(2), re.S)]
+        if blocks:
+            out[m.group(1)] = blocks
+    return out
+
+
 def parse_catalog(text: str) -> dict[str, str]:
     """Detection ID -> first SQL block of its section."""
-    queries = {}
-    for m in re.finditer(r"^### (D\d{2}) .*?$(.*?)(?=^### |^## |\Z)", text, re.M | re.S):
-        block = re.search(r"```sql\n(.*?)```", m.group(2), re.S)
-        if block:
-            sql = "\n".join(line for line in block.group(1).splitlines() if not line.strip().startswith("--"))
-            queries[m.group(1)] = " ".join(sql.split())
-    return queries
+    return {d: blocks[0] for d, blocks in parse_all(text).items()}
 
 
 def fill(query: str, values: dict[str, str]) -> str:
@@ -60,7 +68,8 @@ def fill(query: str, values: dict[str, str]) -> str:
 def plan(stage: str, sources: set[str], only: set[str] | None, values: dict[str, str],
          levels: set[str] | None = None) -> list[dict]:
     meta = json.loads(DETECTIONS.read_text(encoding="utf-8"))["detections"]
-    queries = parse_catalog(CATALOG_MD.read_text(encoding="utf-8"))
+    all_blocks = parse_all(CATALOG_MD.read_text(encoding="utf-8"))
+    queries = {d: b[0] for d, b in all_blocks.items()}
     items = []
     for d in sorted(queries):
         m = meta[d]
@@ -73,10 +82,12 @@ def plan(stage: str, sources: set[str], only: set[str] | None, values: dict[str,
             item.update(status="skipped", reason=f"stage {m['stage']} needed (now {stage})")
         elif missing := [s for s in m["requires"] if s not in sources]:
             item.update(status="skipped", reason="data source needed: " + ", ".join(missing))
-        elif "browserAppName" in queries[d] and not values.get("browserAppName"):
+        elif "browserAppName" in " ".join(all_blocks[d]) and not values.get("browserAppName"):
             item.update(status="skipped", reason="--browser-app needed")
         else:
             item.update(status="planned", nrql=fill(queries[d], values))
+            if "join" in m:  # two queries compared by the script (e.g. D24: APM users vs Browser sessions)
+                item.update(join=m["join"], nrql_followup=fill(all_blocks[d][1], values))
         items.append(item)
     return items
 
@@ -145,12 +156,48 @@ def first_seen_within(rows: list[dict], seconds: int, now: float) -> int:
 NEW_SINCE = {"D17", "D20"}  # judged by "first seen within --since", not by counts
 
 
+def _query(transport, endpoint, api_key, account_id, nrql):
+    resp = transport(endpoint, api_key, {"query": GRAPHQL, "variables": {"accountId": account_id, "nrql": nrql}})
+    if resp.get("errors"):
+        raise RuntimeError(str(resp["errors"][0].get("message", resp["errors"][0]))[:200])
+    return resp["data"]["actor"]["account"]["nrql"]["results"] or []
+
+
+def _key_of(row: dict, key: str):
+    value = row.get(key, row.get("facet"))
+    return value[0] if isinstance(value, list) else value
+
+
+def run_missing_in_second(item, transport, endpoint, api_key, account_id) -> None:
+    """Rows of the first query whose key does not appear in the second query."""
+    j = item["join"]
+    first = _query(transport, endpoint, api_key, account_id, item["nrql"])
+    heavy = [r for r in first if (r.get(j["count_key"]) or 0) >= j["min_count"]]
+    if not heavy:
+        item.update(status="ok", row_count=0, max_value=0, new_count=0, top=[])
+        return
+    keys = [str(_key_of(r, j["key"])) for r in heavy]
+    in_list = ", ".join("'" + k.replace("'", "\\'") + "'" for k in keys)
+    second = _query(transport, endpoint, api_key, account_id,
+                    item["nrql_followup"].replace("{" + j["list_placeholder"] + "}", in_list))
+    seen = {str(_key_of(r, j["key"])) for r in second}
+    missing = [r for r in heavy if str(_key_of(r, j["key"])) not in seen]
+    item.update(status="ok", row_count=len(missing), max_value=len(missing), new_count=len(missing), top=compact(missing))
+
+
 def run(items: list[dict], account_id: int, endpoint: str, api_key: str, transport=http_transport,
         pause: float = 0.2, since: str = "1 day ago", now: float | None = None) -> list[dict]:
     window = since_seconds(since)
     now = time.time() if now is None else now
     for item in items:
         if item["status"] != "planned":
+            continue
+        if "join" in item:
+            try:
+                run_missing_in_second(item, transport, endpoint, api_key, account_id)
+            except Exception as e:
+                item.update(status="error", error=f"{type(e).__name__}: {e}"[:200])
+            time.sleep(pause)
             continue
         try:
             resp = transport(endpoint, api_key, {"query": GRAPHQL,
@@ -171,7 +218,7 @@ def run(items: list[dict], account_id: int, endpoint: str, api_key: str, transpo
 def has_hit(item: dict) -> bool:
     if item.get("status") != "ok":
         return False
-    if item.get("id") in NEW_SINCE:
+    if item.get("id") in NEW_SINCE or "join" in item:
         return (item.get("new_count") or 0) > 0
     return (item.get("max_value") or 0) > 0
 
@@ -273,7 +320,9 @@ def main() -> None:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     for i in items:
-        i.pop("nrql", None) if i["status"] == "skipped" else None
+        if i["status"] == "skipped":
+            i.pop("nrql", None)
+        i.pop("nrql_followup", None)
     (out / "hunt-results.json").write_text(json.dumps({"app": args.app, "stage": args.stage, "since": args.since,
                                                        "items": items}, ensure_ascii=False, indent=1) + "\n")
     (out / "hunt-summary.md").write_text(summary(items, args.app, args.lang), encoding="utf-8")

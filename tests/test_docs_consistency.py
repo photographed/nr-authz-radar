@@ -9,7 +9,7 @@ REFS = ROOT / "skills" / "nr-appsec-guard" / "references"
 class DocsConsistencyTest(unittest.TestCase):
     def test_referenced_detections_exist(self):
         defined = set(re.findall(r"^### (D\d{2}) ", (REFS / "detections.nrql.md").read_text(), re.M))
-        self.assertEqual(len(defined), 21)
+        self.assertEqual(len(defined), 22)
         for path in [REFS / "readiness-checks.md", REFS / "detections.nrql.md"]:
             for ref in set(re.findall(r"\bD\d{2}\b", path.read_text())):
                 self.assertIn(ref, defined, f"{path.name} references undefined {ref}")
@@ -26,7 +26,8 @@ def _defined(prefix, filename):
 
 
 class GoalStructureTest(unittest.TestCase):
-    FILES = {"D": "detections.nrql.md", "U": "usage.nrql.md", "I": "investigation.nrql.md", "R": "readiness-checks.md"}
+    FILES = {"D": "detections.nrql.md", "U": "usage.nrql.md", "I": "investigation.nrql.md", "R": "readiness-checks.md",
+             "L": "logs.nrql.md"}
 
     def test_every_reference_is_defined(self):
         defined = {p: _defined(p, f) for p, f in self.FILES.items()}
@@ -45,8 +46,30 @@ class GoalStructureTest(unittest.TestCase):
                 if re.match(r"^### [DU]\d{2} ", line):
                     self.assertRegex(line, r"段階 S[0-3]", f"{filename}: {line}")
 
+    def test_log_queries_are_scoped_never_scans(self):
+        text = (REFS / "logs.nrql.md").read_text()
+        blocks = re.findall(r"```sql\n(.*?)```", text, re.S)
+        self.assertGreaterEqual(len(blocks), 4)
+        for sql in blocks:
+            if "FROM Log" not in sql:
+                continue
+            self.assertNotIn("SELECT *", sql)
+            self.assertRegex(sql, r"LIMIT (\d+)")
+            self.assertLessEqual(int(re.search(r"LIMIT (\d+)", sql).group(1)), 200, sql)
+            self.assertRegex(sql, r"SINCE \{(since|from)\}", sql)               # a bounded window
+            self.assertTrue(any(k in sql for k in ("trace.id IN", "'authz-radar ", "{pathPrefix}", "{edgeLogFilter}")),
+                            "log query must be scoped by an APM key or an explicit filter: " + sql)
+
+    def test_hunt_never_reads_logs(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import hunt
+        for blocks in hunt.parse_all(hunt.CATALOG_MD.read_text()).values():
+            for sql in blocks:
+                self.assertNotIn("FROM Log", sql)
+
     def test_usage_and_investigation_counts(self):
-        self.assertEqual(len(_defined("U", "usage.nrql.md")), 6)
+        self.assertEqual(len(_defined("U", "usage.nrql.md")), 7)
         self.assertEqual(len(_defined("I", "investigation.nrql.md")), 7)
 
     def test_reports_separate_now_from_recommendations(self):

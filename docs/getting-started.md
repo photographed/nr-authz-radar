@@ -146,6 +146,7 @@ cron や CI から実行できる。要約を Claude に読ませて解釈させ
 | カスタム属性が無いと何もできない？ | できることは多い（S0 でも API の棚卸し・利用実態・SQLi や RCE の兆候など）。**IDOR が成功した証拠だけは S2 の2属性が必要** |
 | REST 以外（GraphQL・WebSocket など）は？ | 対応している。ただしステータスコードを使う検知は REST 専用。詳細: [`shared/protocols.md`](../shared/protocols.md) |
 | 英語で使える？ | 使える。英語で頼めば英語で出力する。スクリプトのレポートは `--lang en` |
+| ログも使う？ | ラストワンマイルとして使う。**スキャンはせず**、APM の手がかり（トレース ID・ユーザー・時間帯）で絞って取りに行く（L01〜L04） |
 | 偽陽性が多くならない？ | 証拠の強さで分けている。通知するのは「証拠」（D01・D07）と「強い兆候」だけで、量や割合の「異常」は既定では通知しない。詳細: [`docs/how-it-works.md`](how-it-works.md) |
 | コストは？ | 定期の Hunt は AI を使わない `hunt.py`。Autopilot は証拠のアラートからだけ。詳細: [`shared/cost.md`](../shared/cost.md) |
 | 現在の検証状況は？ | スクリプト・計装コードはテスト済み。**NRQL・Terraform・Workflow Automation は実際の New Relic 環境では未検証**（Phase 5 で検証予定） |

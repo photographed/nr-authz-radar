@@ -1,6 +1,6 @@
 ---
 name: nr-appsec-guard
-description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credential stuffing, AI-agent-like scraping) from New Relic APM, Logs, Browser, Errors Inbox and Performance Risks Inbox via the New Relic Ground Truth MCP or NerdGraph, audit telemetry readiness, recommend custom attributes / agent XML, and generate alert conditions, Workflow Automation (with or without Autopilot / iRCA) and Slack notifications. Use when asked to check New Relic for attacks, assess security observability readiness, or set up security alerts in New Relic.
+description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credential stuffing, AI-agent-like scraping) from New Relic APM, distributed tracing, Browser and error data via the New Relic Ground Truth MCP or NerdGraph, use logs as a scoped last mile for evidence and investigation, audit telemetry readiness, recommend custom attributes / agent XML, and generate alert conditions, Workflow Automation (with or without Autopilot / iRCA) and Slack notifications. Use when asked to check New Relic for attacks, assess security observability readiness, or set up security alerts in New Relic.
 ---
 
 # nr-appsec-guard — New Relic で認可攻撃に気づく
@@ -20,6 +20,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 - **MCP で問い合わせるときの規則**: 集計（`count`・`uniqueCount`・`percentage`）だけを使い、`SELECT *` や生のイベントを取らない。`FACET` は `LIMIT 20` まで。`SINCE` は必要最小限。Ground Truth の **AI を使う分析系ツールは使わず**、NRQL の実行だけに使う
 - **参照ファイルを丸ごと読まない**: まず `python3 <root>/scripts/catalog.py index --stage <段階>` で一覧を見て、必要な ID だけ `catalog.py show D01 I05 …` で読む
 - 結果は `.authz-radar/` に保存し、**同じ期間・同じ段階の結果があれば再利用する**
+- **ログはスキャンしない。** `catalog.py show L01 …` の L01〜L04 だけを使い、APM の手がかり（トレース ID・ユーザー・時間帯）で範囲を絞る
 - **Autopilot は CRITICAL（証拠）のアラートからだけ。** Skill からも定期の Hunt からも呼ばない
 - チャットには要約だけを出し、全文は `.authz-radar/report.md` に書く
 
@@ -32,7 +33,8 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 | ① 棚卸し | `api-authz-review` Skill ＋ U01・U02 | — |
 | ② 利用実態 | U01〜U06 | `shared/protocols.md`（REST 以外があるとき） |
 | ③ 攻撃検知 | `python3 <root>/scripts/hunt.py --app <appName> --account-id <id> --stage <S> --sources <…> --out .authz-radar/hunt` | `hunt-summary.md`。判定基準は該当 ID だけ `catalog.py show` |
-| ④ 調査 | **最初に I05〜I07**（記録が残っているか）→ I01〜I04 | `catalog.py show I01 … I07` |
+| ④ 調査 | **最初に I05〜I07**（記録が残っているか）→ I01〜I04 → ログで確定（L02） | `catalog.py show I01 … I07 L02` |
+| 証拠の詳細化 | D01 が出たら L01（そのトランザクションのログ行）。属性が送れない環境は L04 | `catalog.py show L01 L04` |
 | 推奨（計装・アラート） | `gen_alerts.py`・`gen_xml_candidates.py` | `references/recommendations.md` |
 
 攻撃検知の要点:

@@ -14,6 +14,17 @@ A successful IDOR returns **200 OK**. Collecting and correlating logs only shows
 To get **evidence** of a successful IDOR, the application itself must report whose data it touched (two attributes are enough).
 Most other things — API inventory, usage, SQL injection and RCE signals, authentication attacks — work **with just the APM agent installed**.
 
+## What is integrated today
+
+| New Relic capability | Status | Notes |
+|---|---|---|
+| APM (Transaction, TransactionError), distributed tracing (Span) | ✅ used | the basis of detection, usage and investigation |
+| Browser | ⚠️ partial | `AjaxRequest` (U02), browser-originated trace parents (`parent.type`, D12, U03), **users calling APIs without any browser session (D24)**; `JavaScriptError` and others unused |
+| Logs (Logs in context, access logs) | ✅ last mile | **never scanned**; fetched only within the scope of APM evidence (trace ID, user, time window) — L01–L04, R16 |
+| Errors Inbox | ⚠️ indirect | uses `TransactionError`, its underlying data (D06, D17, D21). **Error group states (unresolved / resolved / ignored) are not integrated yet** (design: [`shared/inbox-integration.md`](shared/inbox-integration.md), Japanese) |
+| Performance Risks Inbox | ❌ not implemented | the security reading of each risk type is designed (same file); implementation waits until the data access can be checked against a real account |
+| Autopilot, iRCA | ⚠️ draft | called from a Workflow Automation draft (unvalidated) |
+
 ## Four goals
 
 | Goal | Question | With APM only (stage S0) | What the recommendations add |
@@ -43,6 +54,10 @@ Most other things — API inventory, usage, SQL injection and RCE signals, authe
 | `instrumentation/` | Code for your application: a Java (Spring Boot / Spring Security) library for REST, GraphQL and STOMP, tested on Spring Boot 3.5 and 4.1; small files for Python, Node.js, Ruby, Go (tested), PHP (API names unverified) and .NET (not compiled). Pseudonymous user IDs are identical across all languages |
 | `scripts/` | `risk_score.py` (ranking), `gen_alerts.py` (Terraform routed by evidence level; `--lang en`), `hunt.py` (detections via NerdGraph, no AI), `inventory_java.py` (endpoint inventory), `catalog.py` (read only what you need), `gen_xml_candidates.py` (Java agent XML candidates) |
 | `templates/` | Terraform, Workflow Automation (draft), Slack message format, Autopilot prompt, six New Relic Knowledge runbooks |
+
+## Logs as the last mile
+
+**Logs are never scanned.** Starting from APM evidence (trace ID, user, time window), the plugin fetches only the lines it needs: L01 the log lines behind a D01 (whose record was returned), L02 the full set of accesses for an investigation (query strings APM does not record, requests lost to sampling), L03 requests blocked at the edge, L04 structured authorization log lines where custom attributes cannot be sent (high-security mode). For CRITICAL evidence, Workflow Automation fetches the L01 lines (`logsEnabled`). The Java library can write those structured lines (`log-decisions: true`, no user IDs). Readiness check R16 verifies that logs carry trace IDs.
 
 ## False positives, cost and tokens
 
@@ -85,7 +100,7 @@ Details (Japanese): the "対応範囲" section of [README.md](README.md) and [`s
 
 ## Status
 
-Version **0.10.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
+Version **0.11.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
 
 ## Language
 

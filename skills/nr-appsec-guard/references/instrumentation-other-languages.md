@@ -38,6 +38,10 @@
 - **GraphQL・SOAP・JSON-RPC・WebSocket**: `api.protocol` と、サーバー側で決まる `api.operation` を、各言語の属性 API で送る（例: Python `newrelic.agent.add_custom_attribute("api.operation", "Query.order")`）。
 - 1回のリクエストで何度も所有者照合を行う方式（GraphQL のエイリアスなど）では、ファイルの `RequestState` を **リクエスト（またはメッセージ）単位で1つ** 使う。リゾルバごとに作り直すと、一致しなかったことが後の一致で上書きされる。
 
+## 認可判断のログ行（任意）
+High-security mode などで属性が送れない場合は、拒否したときと、所有者が違うのに通したときだけ、`shared/attribute-spec.md` の「認可判断のログ行」の形で1行出す（ユーザー ID は入れない）。
+ログを New Relic に送り、トレース ID を付ける（各エージェントの Logs in context）と、`logs.nrql.md` の L04 で数えられる。
+
 ## expected error の扱い
 
 拒否を expected error として送ると、Errors Inbox でまとまって見えつつ、エラー率や Apdex を悪化させない。

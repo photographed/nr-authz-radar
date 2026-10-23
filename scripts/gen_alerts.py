@@ -27,9 +27,11 @@ DETECTIONS = ROOT / "shared" / "detections.json"
 STATIC = ROOT / "templates" / "terraform"
 STAGES = ["S0", "S1", "S2", "S3"]
 SOURCES = {"spans": "分散トレーシング（Span）", "browser_dt": "Browser + 分散トレーシング",
-           "deployments": "Change Tracking（デプロイ記録）", "logs": "Logs"}
+           "deployments": "Change Tracking（デプロイ記録）", "logs": "Logs",
+           "browser_user": "Browser の enduser.id（setUserId）"}
 SOURCES_EN = {"spans": "distributed tracing (spans)", "browser_dt": "Browser + distributed tracing",
-              "deployments": "change tracking (deployments)", "logs": "Logs"}
+              "deployments": "change tracking (deployments)", "logs": "Logs",
+              "browser_user": "enduser.id in Browser (setUserId)"}
 TEXT = {
     "ja": {"title": "# 生成しなかったアラート（現在の段階: {stage}）",
            "rec": "## 推奨: これを満たすと追加できるアラート",
@@ -58,6 +60,7 @@ HUNT_ONLY_EN = {
     "D17": "needs 'first seen' (earliest), which alerts cannot do",
     "D18": "a reference query for correlation",
     "D20": "needs 'first seen destination' (earliest); run it in Hunt when D21 fires",
+    "D24": "needs two event types (APM and Browser) compared, which an alert condition cannot do",
 }
 PLACEHOLDERS = {"{appName}": "${var.app_name}", "{bypassScopePattern}": "${var.bypass_scope_pattern}"}
 PAGING_LEVELS = ("evidence", "strong")

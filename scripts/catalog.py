@@ -5,7 +5,7 @@
   python3 scripts/catalog.py index --stage S0      # only what runs at this stage
   python3 scripts/catalog.py show D01 D20 I05 R15  # full sections for these IDs only
 
-IDs: D = detections, U = usage, I = investigation, R = readiness.
+IDs: D = detections, U = usage, I = investigation, R = readiness, L = logs (last mile, never scanned).
 """
 from __future__ import annotations
 
@@ -17,9 +17,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REFS = ROOT / "skills" / "nr-appsec-guard" / "references"
-FILES = {"D": "detections.nrql.md", "U": "usage.nrql.md", "I": "investigation.nrql.md", "R": "readiness-checks.md"}
+FILES = {"D": "detections.nrql.md", "U": "usage.nrql.md", "I": "investigation.nrql.md", "R": "readiness-checks.md",
+         "L": "logs.nrql.md"}
 STAGES = ["S0", "S1", "S2", "S3"]
-SECTION = re.compile(r"^### ([DUIR]\d{2}) (.*?)$(.*?)(?=^### |^## |\Z)", re.M | re.S)
+SECTION = re.compile(r"^### ([DUIRL]\d{2}) (.*?)$(.*?)(?=^### |^## |\Z)", re.M | re.S)
 
 
 def sections() -> dict[str, tuple[str, str]]:
@@ -37,7 +38,7 @@ def index(stage: str | None = None, lang: str = "ja") -> str:
     meta = json.loads((ROOT / "shared" / "detections.json").read_text(encoding="utf-8"))
     det, levels = meta["detections"], meta["levels"]
     lines = []
-    for sid, (header, _) in sorted(sections().items(), key=lambda kv: ("RDUI".index(kv[0][0]), kv[0])):
+    for sid, (header, _) in sorted(sections().items(), key=lambda kv: ("RDUIL".index(kv[0][0]), kv[0])):
         st = re.search(r"段階 (S\d)", header)
         st = st.group(1) if st else None
         if stage and st and STAGES.index(st) > STAGES.index(stage):

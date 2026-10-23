@@ -32,6 +32,9 @@ workflowInputs:
   ircaEnabled:
     type: Boolean
     defaultValue: false
+  logsEnabled:
+    type: Boolean
+    defaultValue: false
   runbookBaseUrl:
     type: String
     defaultValue: https://github.com/photographed/nr-authz-radar/blob/main/templates/knowledge-runbooks
@@ -67,6 +70,29 @@ steps:
       query: >-
         SELECT timestamp, version, user FROM Deployment
         WHERE entity.name = '${{ .workflowInputs.appName }}' SINCE 2 hours ago LIMIT 5
+
+  # Logs last mile (logs.nrql.md L01): only the log lines of the transactions behind the evidence.
+  # Never a scan: scoped by trace IDs, 30 minutes, 50 lines. Nested-query syntax is unverified.
+  - name: useLogs
+    type: switch
+    switch:
+      - condition: ${{ .workflowInputs.logsEnabled }}
+        next: evidenceLogs
+    next: useAutopilot
+
+  - name: evidenceLogs
+    type: action
+    action: newrelic.nrdb.query
+    version: 1
+    inputs:
+      accountIds: ["${{ .workflowInputs.accountId }}"]
+      query: >-
+        SELECT timestamp, level, message FROM Log
+        WHERE trace.id IN (SELECT uniques(traceId) FROM Transaction
+          WHERE appName = '${{ .workflowInputs.appName }}' AND resource.owner_match IS FALSE
+          AND authz.decision = 'allow' SINCE 30 minutes ago)
+        SINCE 30 minutes ago LIMIT 50
+    next: useAutopilot
 
   - name: useAutopilot
     type: switch
@@ -111,6 +137,7 @@ steps:
         *今のデータでわかること*
         • 直近30分のエラー応答（上位）: ${{ .steps.enrichTraffic.outputs.results }}
         • 直近2時間のデプロイ: ${{ .steps.enrichDeployments.outputs.results }}
+        • 証拠のログ行（件数のみ。内容は New Relic で確認）: ${{ if .workflowInputs.logsEnabled }}${{ .steps.evidenceLogs.outputs.results | length }}${{ else }}無効${{ end }}
         • Autopilot: ${{ if .workflowInputs.autopilotEnabled }}${{ .steps.askAutopilot.outputs.result }}${{ else }}無効（ランブックに沿って確認してください）${{ end }}
 
         *推奨*

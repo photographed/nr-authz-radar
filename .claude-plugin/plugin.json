@@ -1,6 +1,6 @@
 {
   "name": "nr-authz-radar",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Detect and rank IDOR/BOLA, SQLi and AI-agent-driven API attacks with New Relic Ground Truth (MCP), and audit API authorization scopes in source code.",
   "author": {
     "name": "photographed"

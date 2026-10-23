@@ -62,6 +62,11 @@ public class TestApp {
     }
 
     @Bean
+    io.github.photographed.authzradar.InMemoryDecisionLog decisionLog() {
+        return new io.github.photographed.authzradar.InMemoryDecisionLog();
+    }
+
+    @Bean
     SecurityFilterChain security(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(a -> a.anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())

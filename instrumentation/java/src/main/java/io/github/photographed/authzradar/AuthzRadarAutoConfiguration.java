@@ -2,6 +2,7 @@ package io.github.photographed.authzradar;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,12 +34,14 @@ public class AuthzRadarAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AuthzTelemetry authzTelemetry(TelemetryRecorder recorder, AuthzRadarProperties props) {
+    public AuthzTelemetry authzTelemetry(TelemetryRecorder recorder, AuthzRadarProperties props,
+                                         ObjectProvider<DecisionLog> decisionLogs) {
         Pseudonymizer pseudonymizer = new Pseudonymizer(props.getHmacKey());
         if (!pseudonymizer.enabled()) {
             log.warn("nr.authz-radar.hmac-key is not set: enduser.id and api.key_id will not be sent");
         }
-        return new AuthzTelemetry(recorder, pseudonymizer, props.getAttributes());
+        DecisionLog decisionLog = props.isLogDecisions() ? decisionLogs.getIfAvailable(CommonsDecisionLog::new) : null;
+        return new AuthzTelemetry(recorder, pseudonymizer, props.getAttributes(), decisionLog);
     }
 
     @Bean
