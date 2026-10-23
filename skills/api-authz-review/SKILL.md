@@ -1,6 +1,6 @@
 ---
 name: api-authz-review
-description: Audit API authorization in source code (Java/Spring first) — enumerate endpoints, extract required scopes/roles, detect missing scope checks, IDOR/BOLA candidates (no ownership check), BFLA, mass assignment, SQL injection, OS command injection, unsafe deserialization and excessive data exposure, then rank findings deterministically (optionally boosted by New Relic Ground Truth traffic and attack signals). Use when asked to review API scopes, find IDOR/BOLA, check authorization, or prioritize API security fixes.
+description: Inventory and audit API authorization in source code (Java/Spring first) — enumerate endpoints, extract required scopes/roles, detect missing scope checks, IDOR/BOLA candidates (no ownership check), BFLA, mass assignment, SQL injection, OS command injection, unsafe deserialization and excessive data exposure, then rank findings deterministically (optionally boosted by New Relic Ground Truth traffic and attack signals). Use when asked to review API scopes, find IDOR/BOLA, check authorization, or prioritize API security fixes.
 ---
 
 # api-authz-review — ソースコードの認可・スコープ監査
@@ -98,7 +98,7 @@ WHERE appName = '{appName}' SINCE 7 days ago FACET name LIMIT MAX
 - `attack_signal`: `nr-appsec-guard` の `references/detections.nrql.md` を実行し、末尾の「エンドポイント別 `attack_signal` の決め方」に従って決める。
   判定不能だった場合はスコア上 `none` として渡し、レポートに「判定不能（理由）」と書く。
 
-トラフィック一覧は D16 でも取得できる。あわせて **シャドー API**（New Relic にトラフィックがあるのにソースに無い）と
+トラフィック一覧は `nr-appsec-guard` の U01 でも取得できる（画面から呼ばれている API は U02）。あわせて **シャドー API**（New Relic にトラフィックがあるのにソースに無い）と
 **ゾンビ API**（ソースにあるのにトラフィックが無い）を一覧にする（OWASP API9）。
 
 ### Step 6. 順位付けする
@@ -107,11 +107,16 @@ python3 <plugin-root>/scripts/risk_score.py findings.json --overrides criticalit
 ```
 
 ### Step 7. レポートを出す
+`shared/goals.md` の「レポートの書き方」に従い、**今わかること（1〜5）と推奨（6〜7）を別の節に分ける。**
+
+**今わかること**
 1. サマリー（P0・P1 の件数、`dormant_critical` の件数）
 2. ランキング表（スクリプトの出力をそのまま使う）
 3. Finding の詳細（根拠 `file:line`、点数の内訳 `breakdown`、規格の番号 `standards`、修正パッチ案）
 4. **スコープ一覧表**（CSV: `method,path,handler,required_scope,ownership_check,finding_ids`）
 5. **IDOR の回帰テスト案**（MockMvc: ユーザー A がユーザー B のリソースを取得すると 403 / 404 になること）
-6. 計装の推奨（`shared/attribute-spec.md` の属性を、どのエンドポイントにどの段階（yml / XML / API）で入れるか）
+**推奨**
+6. 修正の推奨（Finding ごとの修正パッチ案は 3 に付けたもの。ここでは優先度順の対応計画にまとめる）
+7. 計装の推奨（`shared/attribute-spec.md` の属性を、どのエンドポイントにどの計装の手段（yml / XML / API）で入れるか。**まず S2 の2属性**を、所有者照合が必要なエンドポイント（F4 の候補）に入れる）
 
 `dormant_critical` は「修正」ではなく「無効化または削除」を最初の対応として提示する。

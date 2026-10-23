@@ -1,4 +1,7 @@
-# 検知 NRQL カタログ
+# ③ 攻撃検知 NRQL カタログ
+
+**目的**: 今、攻撃を受けているかを判定する。API の一覧や利用状況は `usage.nrql.md`（② 利用実態）、何をされたかの調査は `investigation.nrql.md`（④ 調査）。
+各検知の見出しの「段階」は、その検知に必要なアプリ側の計装の段階（`shared/goals.md`）。
 
 Hunt モードで実行するクエリ集。各検知は **前提条件**（`readiness-checks.md` の判定結果）を満たすものだけ実行し、
 満たさないものは「判定不能（理由）」として報告する。
@@ -29,7 +32,7 @@ Hunt モードで実行するクエリ集。各検知は **前提条件**（`rea
 
 ## A. 認可（IDOR / BOLA / スコープ）
 
-### D01 IDOR 成功の証拠 — 前提 ATTR — **最重要**
+### D01 IDOR 成功の証拠 — 段階 S2 — 前提 ATTR — **最重要**
 ```sql
 SELECT count(*) FROM Transaction
 WHERE appName = '{appName}' AND resource.owner_match IS FALSE AND authz.decision = 'allow'
@@ -39,7 +42,7 @@ FACET name, resource.type SINCE {since}
 - アラート候補: **Critical**（静的しきい値 > 0）
 - 誤検知: 管理者・サポートの正当なアクセス。`authz.required_scope LIKE 'admin:%'` 等で除外する。
 
-### D02 他人のリソースへのアクセス試行（拒否された分）— 前提 ATTR, UID
+### D02 他人のリソースへのアクセス試行（拒否された分）— 前提 ATTR, UID — 段階 S2
 ```sql
 SELECT count(*) FROM Transaction
 WHERE appName = '{appName}' AND authz.decision = 'deny' AND authz.deny_reason = 'owner_mismatch'
@@ -48,7 +51,7 @@ FACET enduser.id SINCE {since} LIMIT 20
 - 判定: 1ユーザーが 20件以上 → `strong`、5件以上 → `weak`（しきい値は平常時の分布を見て調整）
 - 意味: 攻撃が**防げている**状態だが、同じ攻撃者が守られていない別の API を探している可能性が高い。
 
-### D03 ID 列挙（コード変更なしで使える）— 前提 URI, UID
+### D03 ID 列挙（コード変更なしで使える）— 前提 URI, UID — 段階 S1
 ```sql
 SELECT uniqueCount(request.uri) AS distinct_ids, count(*) AS requests
 FROM Transaction
@@ -59,7 +62,7 @@ FACET enduser.id, name SINCE 1 hour ago LIMIT 20
 - 判定: 1ユーザーが1時間に 100 以上の異なる ID → `strong`、30 以上 → `weak`
 - 誤検知: 一覧画面からの詳細の連続表示。Browser のセッションと突き合わせる（D12）。
 
-### D04 404 / 403 比率の急上昇 — 前提なし
+### D04 404 / 403 比率の急上昇 — 段階 S0 — 前提なし
 ```sql
 SELECT percentage(count(*), WHERE http.statusCode IN (403, 404)) AS deny_or_notfound
 FROM Transaction WHERE appName = '{appName}'
@@ -68,7 +71,7 @@ FACET name SINCE {since} COMPARE WITH {baseline}
 - 判定: 平常時の5倍以上 → `strong`、2倍以上 → `weak`
 - 意味: 属性が無くても使える、列挙・探索の汎用シグナル。
 
-### D05 スコープ不足・管理系への到達 — 前提 ATTR
+### D05 スコープ不足・管理系への到達 — 段階 S3 — 前提 ATTR
 ```sql
 SELECT count(*) FROM Transaction
 WHERE appName = '{appName}' AND authz.decision = 'deny' AND authz.deny_reason IN ('scope_missing', 'role_missing')
@@ -80,7 +83,7 @@ FACET authz.required_scope, enduser.id SINCE {since} LIMIT 20
 
 ## B. SQL インジェクション
 
-### D06 DB 構文エラー（Errors Inbox と同じデータ）— 前提なし
+### D06 DB 構文エラー（Errors Inbox と同じデータ）— 前提なし — 段階 S0
 ```sql
 SELECT count(*) FROM TransactionError
 WHERE appName = '{appName}' AND (
@@ -101,7 +104,7 @@ FACET transactionName, error.class SINCE {since}
   直近で**初めて出現したグループ**かどうかを `SINCE {baseline}` の結果と比べて判定する。
 - 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
 
-### D07 注入らしい SQL 文 — 前提 SPAN — 要検証
+### D07 注入らしい SQL 文 — 段階 S0 — 前提 SPAN — 要検証
 ```sql
 SELECT count(*) FROM Span
 WHERE entity.name = '{appName}' AND db.statement IS NOT NULL
@@ -113,7 +116,7 @@ FACET name, db.statement SINCE {since} LIMIT 20
 - 判定: 1件以上 → `strong`（ただし、アプリが正当に `information_schema` を参照していないか確認する）
 - 注意: Span はサンプリングされるため、0件でも攻撃が無いとは言えない。
 
-### D08 SQL の形のばらつき（文字列連結の兆候）— 前提 SPAN — 要検証
+### D08 SQL の形のばらつき（文字列連結の兆候）— 前提 SPAN — 段階 S0 — 要検証
 ```sql
 SELECT uniqueCount(db.statement) FROM Span
 WHERE entity.name = '{appName}' AND db.statement IS NOT NULL
@@ -122,7 +125,7 @@ FACET name SINCE {since} COMPARE WITH {baseline}
 - 意味: プレースホルダを使った SQL は形が一定。文字列連結の SQL に攻撃が来ると、形の種類が急増する。
 - 判定: 平常時の3倍以上 → `weak`（D07 と同時なら `strong`）
 
-### D09 時間差を使う Blind SQLi — 前提なし
+### D09 時間差を使う Blind SQLi — 段階 S0 — 前提なし
 ```sql
 SELECT percentile(databaseDuration, 50, 99), max(databaseDuration)
 FROM Transaction WHERE appName = '{appName}' AND databaseDuration IS NOT NULL
@@ -136,7 +139,7 @@ FACET name SINCE {since}
 
 ## C. 認証攻撃・AI エージェントらしい挙動
 
-### D10 認証失敗の急増 — 前提なし
+### D10 認証失敗の急増 — 段階 S0 — 前提なし
 ```sql
 SELECT count(*) FROM Transaction
 WHERE appName = '{appName}' AND http.statusCode = 401
@@ -144,7 +147,7 @@ FACET name SINCE 1 hour ago COMPARE WITH 1 week ago TIMESERIES 5 minutes
 ```
 - 判定: 先週同時刻の5倍以上 → `strong`、2倍以上 → `weak`
 
-### D11 分散アクセス（少数アカウント × 多数のネットワーク）— 前提 NET, UID
+### D11 分散アクセス（少数アカウント × 多数のネットワーク）— 前提 NET, UID — 段階 S3
 ```sql
 -- L0（既定）: ASN と国の粒度
 SELECT uniqueCount(client.asn) AS asns, uniqueCount(client.country) AS countries, count(*) AS requests
@@ -166,7 +169,7 @@ FACET enduser.id SINCE 1 hour ago LIMIT 20
   FACET enduser.id, name SINCE 1 hour ago LIMIT 20
   ```
 
-### D12 ブラウザを経由しない API 直叩き — 前提 BRW — 要検証
+### D12 ブラウザを経由しない API 直叩き — 段階 S0 — 前提 BRW — 要検証
 ```sql
 SELECT percentage(count(*), WHERE parent.type IS NULL) AS no_trace_parent
 FROM Transaction WHERE appName = '{appName}' AND transactionType = 'Web'
@@ -177,7 +180,7 @@ FACET name SINCE {since} COMPARE WITH {baseline}
 - 前提の確認: Browser の分散トレーシングが有効で、クロスオリジンの場合は送信先の許可設定がされていること。満たさない場合は判定不能。
 - 判定: 平常時から 30 ポイント以上上昇 → `weak`
 
-### D13 機械的に一定の間隔 — 前提 UID — 要検証
+### D13 機械的に一定の間隔 — 段階 S1 — 前提 UID — 要検証
 ```sql
 SELECT average(c) AS avg_per_min, stddev(c) AS sd_per_min
 FROM (SELECT count(*) AS c FROM Transaction WHERE appName = '{appName}'
@@ -187,7 +190,7 @@ FACET enduser.id
 - 判定: 平均 20件/分以上 かつ 標準偏差が平均の 10% 未満 → `weak`
 - 人間の操作は間隔がばらつく。一定すぎるアクセスは自動化の兆候（AI エージェントとは断定しない）。
 
-### D14 API キーの異常な使われ方 — 前提 ATTR（`api.key_id`）, NET
+### D14 API キーの異常な使われ方 — 段階 S3 — 前提 ATTR（`api.key_id`）, NET
 ```sql
 SELECT uniqueCount(client.asn) AS asns, uniqueCount(client.country) AS countries, count(*)
 FROM Transaction WHERE appName = '{appName}' AND api.key_id IS NOT NULL
@@ -195,7 +198,7 @@ FACET api.key_id SINCE 1 day ago COMPARE WITH 1 week ago
 ```
 - 判定: 1つのキーで国の数が増えた、または ASN 数が平常時の5倍以上 → `strong`（L1 なら `client.ip_hmac` で同様に集計できる）
 
-### D15 有効期限の長すぎるトークン — 前提 ATTR（`auth.token_age_sec`）
+### D15 有効期限の長すぎるトークン — 段階 S3 — 前提 ATTR（`auth.token_age_sec`）
 ```sql
 SELECT percentile(auth.token_age_sec, 50, 95, 99), max(auth.token_age_sec)
 FROM Transaction WHERE appName = '{appName}' AND auth.token_age_sec IS NOT NULL
@@ -205,33 +208,16 @@ FACET client.type SINCE {since}
 
 ---
 
-## D. インベントリ・変更相関
+## D. 例外・変更相関
 
-### D16 観測されているエンドポイント一覧（シャドー / ゾンビ API の突合用）— 前提なし
-```sql
-SELECT count(*), latest(timestamp) FROM Transaction
-WHERE appName = '{appName}' AND transactionType = 'Web'
-FACET name SINCE 30 days ago LIMIT MAX
-```
-- `api-authz-review` のエンドポイント一覧と突き合わせる。
-
-### D19 画面から呼ばれている API（Ajax）— 前提 BRW
-```sql
-SELECT count(*) FROM AjaxRequest
-WHERE appName = '{browserAppName}'
-FACET httpMethod, groupedRequestUrl SINCE 7 days ago LIMIT MAX
-```
-- D16（サーバーで観測された API）と、`api-authz-review` のエンドポイント一覧の3つを突き合わせる（`shared/data-sources.md` §3）。
-- **サーバーでは呼ばれているのに画面からは呼ばれていない API** は、モバイル・外部連携向けか、アプリを経由しない直接呼び出しの可能性がある。用途を確認し、用途が不明なら露出度を `mobile` または `external` として優先度に反映する。
-
-### D17 新しい種類の例外（A10）— 前提なし
+### D17 新しい種類の例外（A10）— 前提なし — 段階 S0
 ```sql
 SELECT count(*), earliest(timestamp) FROM TransactionError
 WHERE appName = '{appName}' FACET error.class SINCE {baseline}
 ```
 - `earliest(timestamp)` が直近 `{since}` 以内の `error.class` = 新しく出現した例外。
 
-### D18 変更相関（iRCA が無い場合の代替）— 前提 DEP — 要検証
+### D18 変更相関（iRCA が無い場合の代替）— 前提 DEP — 段階 S0 — 要検証
 ```sql
 SELECT timestamp, version, changelog, user FROM Deployment
 WHERE entity.name = '{appName}' SINCE {baseline} LIMIT 20
@@ -247,7 +233,7 @@ WHERE entity.name = '{appName}' SINCE {baseline} LIMIT 20
 RCE は「コードが実行された瞬間」を APM で確実に見ることはできない。ここでは **攻撃の試み（D21）** と **成功後の不審な外部通信（D20）** で気づく。
 両方が同じ時間帯・同じアプリで出た場合は、RCE の可能性が高い。
 
-### D20 見たことのない外部への通信 — 前提 SPAN — 要検証
+### D20 見たことのない外部への通信 — 段階 S0 — 前提 SPAN — 要検証
 ```sql
 SELECT count(*), earliest(timestamp) AS first_seen FROM Span
 WHERE entity.name = '{appName}' AND span.kind = 'client' AND category = 'http'
@@ -261,7 +247,7 @@ FACET peer.hostname SINCE 30 days ago LIMIT MAX
 - **見えないもの**: APM の外部呼び出しの計測は主に HTTP。**JNDI の LDAP / RMI 接続や DNS による確認は Span に出ない可能性が高い**。
   それらを見るには、Network Performance Monitoring・ファイアウォールのログ・Infrastructure の `NetworkSample` が必要（`shared/data-sources.md`）。
 
-### D21 RCE の試みで出る例外 — 前提なし
+### D21 RCE の試みで出る例外 — 段階 S0 — 前提なし
 ```sql
 SELECT count(*), earliest(timestamp) AS first_seen FROM TransactionError
 WHERE appName = '{appName}' AND (

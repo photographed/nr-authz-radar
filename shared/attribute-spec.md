@@ -11,6 +11,16 @@ IDOR / BOLA は攻撃が成功すると **200 OK** で返る。エラーにも�
 Errors Inbox・Performance Risks Inbox・既定のアラートでは原理的に検知できない。
 「認可の判断結果」をアプリが自分で送らない限り、New Relic からは見えない。
 
+## 段階ごとの最小セット
+
+| 段階 | 属性 |
+|---|---|
+| S1 | `enduser.id` |
+| **S2（最小限のコード）** | **`resource.owner_match`、`authz.decision`**（＋ `enduser.id`）。これだけで D01（IDOR 成功の証拠）が使える |
+| S3 | 下表の残り |
+
+S2 以外の属性には代わりの手段がある（`shared/goals.md`）。**まず S2 から入れる。**
+
 ## 属性一覧
 
 送信先はすべて **Transaction（および同トランザクション内の TransactionError / Span）** の custom attribute。
@@ -56,13 +66,14 @@ resource.owner_match = false AND authz.decision = 'allow'
 5. **上限**: エージェントには custom attribute 数・値長の上限がある（目安: 1イベント64個、値255文字。
    エージェント・バージョンごとに要確認）。本仕様は最大15個に収めている。
 
-## 計装の3段階（Java の場合）
+## 計装の手段（Java の場合）
 
-| 段階 | 手段 | コード変更 | 取れる属性 |
+| 手段 | 方法 | コード変更 | 取れる属性 |
 |---|---|---|---|
 | ① 設定のみ | `newrelic.yml`（servlet-user 計装、`attributes.include`） | 不要 | `enduser.id`（ハッシュ化はできない点に注意） |
 | ② XML | `extensions/*.xml` の `<type attributeName="…">` / Custom Instrumentation Editor | 不要 | 引数をそのまま記録できるもののみ（`resource.type` 等）。**比較が要る `owner_match` は不可** |
 | ③ API | `NewRelic.addCustomParameter` / `setUserId` / `noticeError` | 必要 | **全属性** |
 
 Skill は ①→②→③ の順に「最も手軽に済む手段」を推奨し、③が必要な理由を明示する。
+「手段」はどう入れるか、`shared/goals.md` の「段階（S0〜S3）」はどこまで入れるか、という別の軸。
 言語別の実装例は `skills/nr-appsec-guard/references/instrumentation-<lang>.md`（Phase 3）。

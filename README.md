@@ -9,22 +9,46 @@
 ## なぜ SIEM ではないのか
 
 IDOR は攻撃が成功すると **200 OK** で返ります。ログを集めて相関しても「正常なアクセス」にしか見えません。
-気づくには、アプリ自身が「誰が・どのスコープで・誰のデータに触れたか」を送る必要があります。
-このプラグインは、その **計装の推奨** と、APM・Browser・Errors Inbox・Performance Risks Inbox を使った **検知**、
-そしてソースコードの **認可監査** をセットで提供します。
+**攻撃が成功した IDOR を証拠として見つける**には、アプリ自身が「誰のデータに触れたか」を送る必要があります（必要なのは2属性だけ）。
+一方で、それ以外の多くのこと（API の棚卸し、利用実態、SQLi や RCE の兆候、認証攻撃）は、**APM を入れただけの状態からでもできます。**
+このプラグインは、ソースコードの **認可監査**、APM・Browser・Errors Inbox・Performance Risks Inbox を使った **利用実態の把握と検知**、
+**調査の手順**、そして **段階的な計装の推奨** をセットで提供します。
+
+## 4つの目的
+
+扱う問題は4つの別々の目的に分かれます。答えたい問いも必要なデータも違うので、混ぜずに扱います。詳細は [`shared/goals.md`](shared/goals.md)。
+
+| 目的 | 答えたい問い | 今のデータでできること（APM を入れただけ = S0） | 推奨に従うと増えること |
+|---|---|---|---|
+| **① 棚卸し** | API は全部でいくつあり、どんな認可設計か | **コード監査はすべて可能**（New Relic 不要）。観測されている API との突き合わせ | トランザクション名を API 単位に整えると突き合わせが正確になる |
+| **② 利用実態** | どの API が、どこから、どれだけ使われているか | API ごとの件数・ステータス・呼び出し元（画面 / モバイル / 直接） | S1 でユーザー単位の利用状況 |
+| **③ 攻撃検知** | 今、攻撃を受けているか | 403/404 の急増、SQLi・RCE の兆候、認証失敗の急増、画面を通らない直接呼び出し、新しい外部通信 | S1 で ID 列挙、**S2 で IDOR 成功の証拠**、S3 でスコープ不足・API キーの異常 |
+| **④ 調査** | 何をされたか、どのデータが取られたか（200 も含む） | 対象のタイムライン、触った API、200 で返ったパス（**APM はサンプリングされ得るため一部**） | ログの取り込みで**全件での確定**、保存期間の延長 |
+
+### 段階（アプリ側の計装をどこまでやるか）
+
+| 段階 | やること | 増えること |
+|---|---|---|
+| **S0** | APM エージェントを入れる（分散トレーシングを有効に） | 上の表の「今のデータでできること」 |
+| **S1** | `enduser.id` を送る（仮名化して） | ユーザー単位の利用実態・検知・調査 |
+| **S2** | **`resource.owner_match` と `authz.decision` の2属性** | **IDOR 成功の証拠（D01）**。どうしても必要なコード計装はこれだけ |
+| **S3** | 残りの属性 | スコープ不足、API キーの異常、トークンの有効期限など |
+
+### レポートの原則
+すべてのレポートで、**「今のデータでわかること・できること」と「推奨」を別の節に分けます。** 推奨には「それをやると何がわかるようになるか」と「どの目的に効くか」を必ず書きます。
 
 ## 前提: New Relic に必要なデータ
 
 **見える範囲は「何のデータが入っているか」で決まります。** まず APM と分散トレーシングで API の実態をつかみ、そこから範囲を広げます。
 Readiness 監査は、この表を上から順に確認して不足を指摘します。詳細は [`shared/data-sources.md`](shared/data-sources.md)。
 
-| 段階 | データソース | 主なイベント | これでできること |
+| 優先度 | データソース | 主なイベント | これでできること |
 |---|---|---|---|
 | **必須** | APM エージェント | `Transaction`、`TransactionError` | API ごとのアクセス・ステータス・例外。**トランザクション名 = API エンドポイント** |
 | **必須** | 分散トレーシング | `Span` | API の中の SQL 文・外部呼び出し。画面から API までのつながり |
-| **必須** | 認可属性（コード計装） | `Transaction` の custom attribute | **IDOR 成功を見る唯一の手段**（[`shared/attribute-spec.md`](shared/attribute-spec.md)） |
+| 推奨（S2） | 認可属性（コード計装） | `Transaction` の custom attribute | **IDOR 成功を証拠として見る唯一の手段**。最小は2属性（[`shared/attribute-spec.md`](shared/attribute-spec.md)） |
 | 推奨 | Browser エージェント | `PageView`、`AjaxRequest` | 画面から実際に呼ばれている API の一覧。正規の画面を通った呼び出しかの判定 |
-| 推奨 | Logs in context | `Log` | トランザクションと結び付いたアプリのログ |
+| 推奨 | Logs in context・アクセスログ | `Log` | トランザクションと結び付いたアプリのログ。**④ 調査で全件を確定させる手段**（APM はサンプリングされ得る） |
 | 推奨 | Change Tracking | デプロイ記録 | 「攻撃か、自分たちの変更か」の切り分け（iRCA の精度にも影響） |
 | 任意 | ミドルウェア・WAF・ファイアウォール・OS のログ | `Log` | クエリ文字列を含むリクエスト内容、エッジでの判定、侵入後の操作 |
 | 任意 | Infrastructure / Network Performance Monitoring | `SystemSample`、`ProcessSample` など | 侵入後の兆候（不審なプロセス・通信） |
@@ -53,8 +77,8 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 
 | Skill | 役割 |
 |---|---|
-| `nr-appsec-guard` | 実行時: Readiness 監査、Hunt（NRQL による検知。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、計装推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
-| `api-authz-review` | コード: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・OS コマンドインジェクション・デシリアライズ・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
+| `nr-appsec-guard` | 実行時: 前提の確認（段階とデータソース）、② 利用実態（U01〜U05）、③ 攻撃検知（D01〜D21。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、④ 調査（I01〜I07）、計装の推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
+| `api-authz-review` | ① 棚卸し（コード）: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・OS コマンドインジェクション・デシリアライズ・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
 
 ## 対応範囲（何をカバーし、何をカバーしないか）
 
@@ -75,7 +99,7 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | A06 Insecure Design | △ | Mass Assignment（F6）、上限のない一覧取得（F8）、脅威モデル | 設計レビュー全般 |
 | A07 Authentication Failures | ○ | 認証なしの API（F1）、認証失敗の急増（D10）、長寿命トークン（D15）、API キーの異常利用（D14） | パスワードポリシー・MFA・セッション管理の監査 |
 | A08 Software or Data Integrity Failures | △ | **安全でないデシリアライズのみ**（F10、D21） | CI/CD・署名・更新の完全性の検証 |
-| A09 Security Logging and Alerting Failures | ◎ | Readiness 監査（R01–R11）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
+| A09 Security Logging and Alerting Failures | ◎ | 前提の確認（R01–R14。サンプリング・保存期間を含む）、調査の手順（I01–I07）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
 | A10 Mishandling of Exceptional Conditions | △ | 新しい種類の例外の出現（D17）、Errors Inbox の活用 | 例外処理のコード監査全般 |
 
 ### OWASP API Security Top 10:2023
@@ -90,7 +114,7 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | API6 Unrestricted Access to Sensitive Business Flows | △ | 業務トランザクションの異常頻度（検知の考え方のみ） |
 | API7 Server Side Request Forgery | × | — |
 | API8 Security Misconfiguration | △ | A02 と同じ |
-| API9 Improper Inventory Management | ○ | シャドー API / ゾンビ API の突き合わせ（D16 + コード監査） |
+| API9 Improper Inventory Management | ○ | シャドー API / ゾンビ API の突き合わせ（U01・U02 + コード監査） |
 | API10 Unsafe Consumption of APIs | × | — |
 
 ### CIS
@@ -197,7 +221,9 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.1.0** Phase 1: 共通仕様（属性、OWASP 対応、脅威モデル、ランキング）、Skill の骨組み、ランキングスクリプト
 - [x] **v0.2.0** Phase 2: Readiness 監査（R01〜R11）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
 - [x] **v0.3.0** 必要なデータソースの整理（R12、D19）、IAST との役割分担、RCE の一部（F9、F10、D20、D21）
-- [ ] Phase 3: Java（Spring Security）の計装サンプル、XML 候補の生成 → 以降、APM エージェント対応の全言語
+- [x] **v0.4.0** 4つの目的（棚卸し / 利用実態 / 攻撃検知 / 調査）と段階（S0〜S3）で再構成。利用実態 U01〜U05（D16・D19 を移動）、調査 I01〜I07、前提の確認 R13・R14。レポートを「今わかること」と「推奨」に分離
+- [ ] **v0.5.0** Java（Spring Security）の計装ライブラリ。S2 の2属性から使える形
+- [ ] Phase 3（残り）: XML 候補の生成、APM エージェント対応の他言語
 - [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
