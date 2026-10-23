@@ -13,6 +13,7 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 - `shared/threat-model-2026-jp.md` — 日本国内の最新の手口
 - `shared/risk-scoring.md` — 優先度の計算
 - `shared/privacy.md` — データ最小化・IP の扱い
+- `shared/standards.json` — 検知ごとの CWE・ASVS・OWASP・OAT・IPA
 
 ## 守ること
 

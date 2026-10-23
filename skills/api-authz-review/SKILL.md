@@ -12,6 +12,7 @@ API ごとに「どのスコープが必要か」「所有者照合をしてい�
 - `shared/attribute-spec.md`（計装推奨で使う属性名）
 - `shared/owasp-mapping.md`
 - `shared/risk-scoring.md`（**順位付けは必ずこの仕様とスクリプトで行う**）
+- `shared/standards.json`（Finding ごとの CWE・ASVS・OWASP・IPA。レポートに必ず併記する）
 
 ## 守ること
 
@@ -99,7 +100,7 @@ python3 <plugin-root>/scripts/risk_score.py findings.json --overrides criticalit
 ### Step 7. レポートを出す
 1. サマリー（P0・P1 の件数、`dormant_critical` の件数）
 2. ランキング表（スクリプトの出力をそのまま使う）
-3. Finding の詳細（根拠 `file:line`、点数の内訳 `breakdown`、修正パッチ案）
+3. Finding の詳細（根拠 `file:line`、点数の内訳 `breakdown`、規格の番号 `standards`、修正パッチ案）
 4. **スコープ一覧表**（CSV: `method,path,handler,required_scope,ownership_check,finding_ids`）
 5. **IDOR の回帰テスト案**（MockMvc: ユーザー A がユーザー B のリソースを取得すると 403 / 404 になること）
 6. 計装の推奨（`shared/attribute-spec.md` の属性を、どのエンドポイントにどの段階（yml / XML / API）で入れるか）

@@ -1,0 +1,494 @@
+{
+  "version": "0.3",
+  "notes": [
+    "ASVS は 5.0 の章レベルで対応付けている。個別要件の番号は原文で確認すること。",
+    "IPA は「安全なウェブサイトの作り方 改訂第7版」の節番号。原文で確認すること。",
+    "OAT と AI エージェントの結び付けは本プラグインの分析であり、OWASP の公式な位置付けではない。"
+  ],
+  "findings": {
+    "F1": {
+      "title": "認証なしで公開されている API",
+      "cwe": [
+        "CWE-306"
+      ],
+      "asvs": [
+        "V6",
+        "V8"
+      ],
+      "owasp_top10": [
+        "A07",
+        "A01"
+      ],
+      "owasp_api": [
+        "API2"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "F2": {
+      "title": "スコープ・権限チェックが無い",
+      "cwe": [
+        "CWE-862"
+      ],
+      "asvs": [
+        "V8",
+        "V10"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API5"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "F3": {
+      "title": "スコープ・権限が不適切",
+      "cwe": [
+        "CWE-863"
+      ],
+      "asvs": [
+        "V8",
+        "V10"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API5"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "F4": {
+      "title": "IDOR / BOLA（所有者照合が無い）",
+      "cwe": [
+        "CWE-639"
+      ],
+      "asvs": [
+        "V8"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "F5": {
+      "title": "機能レベルの認可不備（BFLA）",
+      "cwe": [
+        "CWE-285"
+      ],
+      "asvs": [
+        "V8"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API5"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "F6": {
+      "title": "Mass Assignment",
+      "cwe": [
+        "CWE-915"
+      ],
+      "asvs": [
+        "V15"
+      ],
+      "owasp_top10": [
+        "A06"
+      ],
+      "owasp_api": [
+        "API3"
+      ],
+      "oat": [],
+      "ipa": []
+    },
+    "F7": {
+      "title": "SQL インジェクション",
+      "cwe": [
+        "CWE-89"
+      ],
+      "asvs": [
+        "V1"
+      ],
+      "owasp_top10": [
+        "A05"
+      ],
+      "owasp_api": [],
+      "oat": [],
+      "ipa": [
+        "1.1"
+      ]
+    },
+    "F8": {
+      "title": "過剰なデータ露出・上限のない取得",
+      "cwe": [
+        "CWE-213",
+        "CWE-770"
+      ],
+      "asvs": [
+        "V14",
+        "V2"
+      ],
+      "owasp_top10": [
+        "A06"
+      ],
+      "owasp_api": [
+        "API3",
+        "API4"
+      ],
+      "oat": [],
+      "ipa": []
+    }
+  },
+  "detections": {
+    "D01": {
+      "title": "IDOR 成功の証拠",
+      "cwe": [
+        "CWE-639"
+      ],
+      "asvs": [
+        "V8",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "D02": {
+      "title": "他人のリソースへのアクセス試行",
+      "cwe": [
+        "CWE-639"
+      ],
+      "asvs": [
+        "V8",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1"
+      ],
+      "oat": [
+        "OAT-011"
+      ],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "D03": {
+      "title": "ID 列挙",
+      "cwe": [
+        "CWE-639"
+      ],
+      "asvs": [
+        "V8",
+        "V2"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1"
+      ],
+      "oat": [
+        "OAT-011"
+      ],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "D04": {
+      "title": "403 / 404 比率の急上昇",
+      "cwe": [],
+      "asvs": [
+        "V16"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1",
+        "API9"
+      ],
+      "oat": [
+        "OAT-014",
+        "OAT-018"
+      ],
+      "ipa": []
+    },
+    "D05": {
+      "title": "スコープ不足・管理系への到達",
+      "cwe": [
+        "CWE-862",
+        "CWE-285"
+      ],
+      "asvs": [
+        "V8",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API5"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "D06": {
+      "title": "DB 構文エラー",
+      "cwe": [
+        "CWE-89"
+      ],
+      "asvs": [
+        "V1",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A05"
+      ],
+      "owasp_api": [],
+      "oat": [
+        "OAT-014"
+      ],
+      "ipa": [
+        "1.1"
+      ]
+    },
+    "D07": {
+      "title": "注入らしい SQL 文",
+      "cwe": [
+        "CWE-89"
+      ],
+      "asvs": [
+        "V1"
+      ],
+      "owasp_top10": [
+        "A05"
+      ],
+      "owasp_api": [],
+      "oat": [
+        "OAT-014"
+      ],
+      "ipa": [
+        "1.1"
+      ]
+    },
+    "D08": {
+      "title": "SQL の形のばらつき",
+      "cwe": [
+        "CWE-89"
+      ],
+      "asvs": [
+        "V1"
+      ],
+      "owasp_top10": [
+        "A05"
+      ],
+      "owasp_api": [],
+      "oat": [],
+      "ipa": [
+        "1.1"
+      ]
+    },
+    "D09": {
+      "title": "時間差を使う Blind SQLi",
+      "cwe": [
+        "CWE-89"
+      ],
+      "asvs": [
+        "V1"
+      ],
+      "owasp_top10": [
+        "A05"
+      ],
+      "owasp_api": [],
+      "oat": [
+        "OAT-014"
+      ],
+      "ipa": [
+        "1.1"
+      ]
+    },
+    "D10": {
+      "title": "認証失敗の急増",
+      "cwe": [
+        "CWE-307"
+      ],
+      "asvs": [
+        "V6",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A07"
+      ],
+      "owasp_api": [
+        "API2"
+      ],
+      "oat": [
+        "OAT-007",
+        "OAT-008"
+      ],
+      "ipa": []
+    },
+    "D11": {
+      "title": "少数アカウント × 多数のネットワーク",
+      "cwe": [
+        "CWE-307"
+      ],
+      "asvs": [
+        "V2",
+        "V6"
+      ],
+      "owasp_top10": [
+        "A07"
+      ],
+      "owasp_api": [
+        "API2",
+        "API4"
+      ],
+      "oat": [
+        "OAT-008",
+        "OAT-011"
+      ],
+      "ipa": []
+    },
+    "D12": {
+      "title": "ブラウザを経由しない API 直叩き",
+      "cwe": [],
+      "asvs": [
+        "V2"
+      ],
+      "owasp_top10": [],
+      "owasp_api": [
+        "API4",
+        "API6"
+      ],
+      "oat": [
+        "OAT-011"
+      ],
+      "ipa": []
+    },
+    "D13": {
+      "title": "機械的に一定の間隔",
+      "cwe": [],
+      "asvs": [
+        "V2"
+      ],
+      "owasp_top10": [],
+      "owasp_api": [
+        "API4",
+        "API6"
+      ],
+      "oat": [
+        "OAT-011"
+      ],
+      "ipa": []
+    },
+    "D14": {
+      "title": "API キーの異常な使われ方",
+      "cwe": [],
+      "asvs": [
+        "V6"
+      ],
+      "owasp_top10": [
+        "A07"
+      ],
+      "owasp_api": [
+        "API2"
+      ],
+      "oat": [],
+      "ipa": []
+    },
+    "D15": {
+      "title": "有効期限の長すぎるトークン",
+      "cwe": [
+        "CWE-613"
+      ],
+      "asvs": [
+        "V9"
+      ],
+      "owasp_top10": [
+        "A07"
+      ],
+      "owasp_api": [
+        "API2"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.4"
+      ]
+    },
+    "D16": {
+      "title": "観測されているエンドポイント一覧",
+      "cwe": [],
+      "asvs": [
+        "V15"
+      ],
+      "owasp_top10": [],
+      "owasp_api": [
+        "API9"
+      ],
+      "oat": [],
+      "ipa": []
+    },
+    "D17": {
+      "title": "新しい種類の例外",
+      "cwe": [
+        "CWE-755"
+      ],
+      "asvs": [
+        "V16"
+      ],
+      "owasp_top10": [
+        "A10"
+      ],
+      "owasp_api": [],
+      "oat": [],
+      "ipa": []
+    },
+    "D18": {
+      "title": "変更相関",
+      "cwe": [],
+      "asvs": [
+        "V16"
+      ],
+      "owasp_top10": [
+        "A09"
+      ],
+      "owasp_api": [],
+      "oat": [],
+      "ipa": []
+    }
+  }
+}
