@@ -12,14 +12,16 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 - `shared/owasp-mapping.md` — 脅威とシグナルの対応
 - `shared/threat-model-2026-jp.md` — 日本国内の最新の手口
 - `shared/risk-scoring.md` — 優先度の計算
+- `shared/privacy.md` — データ最小化・IP の扱い
 
 ## 守ること
 
 1. **New Relic へは読み取りのみ**。アラート・Workflow・Slack 設定は **ファイルとして生成するだけ**で、適用はユーザーが行う。
 2. **アプリ側の変更（`newrelic.yml`・XML・コード）も生成のみ**。再起動を伴うため本番反映は人間が判断する。
-3. **PII を出力に含めない**。クエリ結果にユーザーIDや IP が含まれる場合は、レポートでは件数・ハッシュ・上位N件の要約にとどめる。
-4. **断定しない**。「AI エージェントによる攻撃」は兆候として報告し、確定とは書かない。
-5. 不確実な機能（iRCA の提供状況、MCP ツールの書き込み可否、JP エンドポイント URL 等）は、実際に確認できるまで「未確認」と書く。
+3. **データは最小限に**。IP アドレスは既定で送らない設計を推奨する（`shared/privacy.md`）。IP の利用を提案するときは、必ず法務確認が必要な旨を添える。
+4. **PII を出力に含めない**。クエリ結果にユーザーIDや IP が含まれる場合は、レポートでは件数・ハッシュ・上位N件の要約にとどめる。
+5. **断定しない**。「AI エージェントによる攻撃」は兆候として報告し、確定とは書かない。
+6. 不確実な機能（iRCA の提供状況、MCP ツールの書き込み可否、JP エンドポイント URL 等）は、実際に確認できるまで「未確認」と書く。
 
 ## リージョンの選択
 
@@ -31,20 +33,23 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 ユーザーの依頼から判定する。曖昧な場合は ① から始める。
 
 ### ① Readiness 監査（何が検知できる状態か）
-確認項目（Phase 2 で `references/readiness-checks.md` に NRQL を整備）:
-- `shared/attribute-spec.md` の属性が届いているか（`SELECT keyset() FROM Transaction` 等）
-- High-security mode の有無（有効なら属性ベース検知は不可 → Logs 経由の代替を提示）
-- Browser が同じアプリに入っているか（APM と Browser の突合ができるか）
-- Logs in context が有効か
-- Errors Inbox / Performance Risks Inbox が使えるか
+`references/readiness-checks.md` の R01〜R11 を順に実行する（R11 はプライバシー監査）。主な確認項目:
+- 認可属性が届いているか、全エンドポイントに付いているか（計装漏れ）
+- High-security mode の有無（推定 + ユーザーに確認）
+- Browser / Mobile との分散トレーシング、Span の SQL 文、デプロイ記録
+- Errors Inbox / Performance Risks Inbox を MCP で扱えるか
 - **Autopilot / iRCA のオン・オフ**（下表の動作を切り替える）
-- 計装漏れ（トランザクション名に未知のものが多い、`traffic_rpm: null` が多い）
 
-結果は「検知できる脅威 / できない脅威」の表と、できない理由・必要な対応（属性・設定）で出す。
+結果は同ファイルの「出力形式」に従い、「検知できる脅威 / できない脅威」と改善項目（効果の大きい順）で出す。
 
 ### ② Hunt（今起きていることを調べる）
-`shared/owasp-mapping.md` のシグナルを NRQL で実行する（Phase 2 で `references/detections.nrql.md` に整備）。
-結果は脅威ごとに「兆候あり / なし / 判定不能（データ不足）」で報告する。
+`references/detections.nrql.md` の D01〜D18 のうち、Readiness 監査で前提を満たしたものだけを実行する。
+- 実行順: D01（IDOR 成功）→ A 認可 → B SQLi → C 認証・AI エージェント → D インベントリ・変更相関
+- **D01 で1件でも見つかったら、他の検知より先にユーザーへ報告する。**
+- 「要検証」のクエリがエラーになったら、簡略化して再試行し、その旨を報告する。
+- 結果は脅威ごとに `strong` / `weak` / `none` / 判定不能（理由）で報告する。
+- 兆候がある場合は D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分ける。
+- `api-authz-review` と連携する場合は、同ファイル末尾のルールでエンドポイント別の `attack_signal` を作る。
 
 ### ③ Harden（計装の推奨）
 `shared/attribute-spec.md` の3段階（yml → XML → API）で、最も手軽に済む手段を推奨する。
