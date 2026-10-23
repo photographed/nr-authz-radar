@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### Added
+- README に「いつ使うか」（目的ごとの頻度）
+- `docs/how-it-works.md`: IDOR などの判定の仕組み（4つの層と、それぞれで言えること）、限界
+
 ## [0.7.0] - 2026-10-23
 
 ### Added
