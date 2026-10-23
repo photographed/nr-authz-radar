@@ -29,7 +29,7 @@ Readiness 監査は、この表を上から順に確認して不足を指摘し�
 | 任意 | ミドルウェア・WAF・ファイアウォール・OS のログ | `Log` | クエリ文字列を含むリクエスト内容、エッジでの判定、侵入後の操作 |
 | 任意 | Infrastructure / Network Performance Monitoring | `SystemSample`、`ProcessSample` など | 侵入後の兆候（不審なプロセス・通信） |
 | 任意 | Vulnerability Management | — | 使っているライブラリの既知の脆弱性 |
-| 任意（申請制） | **IAST**（Limited Preview） | — | テスト環境でインジェクション系の脆弱性（RCE につながるものを含む）を検出し、コード監査の結果を裏付ける。**本番環境では使わない** |
+| 任意（申請制） | **IAST**（Limited Preview。Java は [New Relic Security Agent](https://github.com/newrelic/csec-java-agent)） | — | テスト環境で SQLi・RCE・デシリアライズなどを検出し、コード監査の結果を裏付ける。**本番環境では使わない**。**IDOR などの認可の不備は IAST の対象外**なので、このプラグインと補い合う（[役割分担](shared/data-sources.md#4-iast-とこのプラグインの役割分担)） |
 
 ### トランザクション名が API 単位になっているか
 

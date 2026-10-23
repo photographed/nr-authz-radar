@@ -12,6 +12,7 @@
 - README に「前提: New Relic に必要なデータ」を追加。IAST（Limited Preview・申請制）を任意のデータソースとして記載
 - Readiness 監査 R12（トランザクション名の品質）
 - 検知 D19（画面から呼ばれている API の一覧。AjaxRequest）
+- IAST（New Relic Security Agent for Java）との役割分担を `shared/data-sources.md` §4 に記載。コード監査に IAST での裏付けの手順（Step 3.5）を追加。`standards.json` に `iast` を追加
 
 ## [0.2.0] - 2026-10-23
 

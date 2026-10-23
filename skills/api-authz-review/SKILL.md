@@ -62,6 +62,11 @@ Gateway の設定が無い場合は、「スコープ検証がコード外にあ
 
 OpenAPI 定義がある場合は、**定義のスコープと実装のスコープのズレ（ドリフト）**を F2 / F3 として報告する。
 
+### Step 3.5（任意）IAST の結果で裏付ける
+テスト環境に IAST（New Relic Security Agent）が入っている場合、IAST が検出した脆弱性と Finding を突き合わせる。
+両方で見つかったものは `confidence: confirmed`。対応関係は `shared/standards.json` の `iast`、役割分担は `shared/data-sources.md` §4。
+IAST で見つからなかったことを理由に Finding を取り下げない（テストで通らなかった経路は検査されないため）。
+
 ### Step 4. 特徴量を付ける
 各 Finding について `shared/risk-scoring.md` §4 の `features` を埋める。
 
