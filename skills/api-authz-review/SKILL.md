@@ -1,6 +1,6 @@
 ---
 name: api-authz-review
-description: Audit API authorization in source code (Java/Spring first) — enumerate endpoints, extract required scopes/roles, detect missing scope checks, IDOR/BOLA candidates (no ownership check), BFLA, mass assignment, SQL injection and excessive data exposure, then rank findings deterministically (optionally boosted by New Relic Ground Truth traffic and attack signals). Use when asked to review API scopes, find IDOR/BOLA, check authorization, or prioritize API security fixes.
+description: Audit API authorization in source code (Java/Spring first) — enumerate endpoints, extract required scopes/roles, detect missing scope checks, IDOR/BOLA candidates (no ownership check), BFLA, mass assignment, SQL injection, OS command injection, unsafe deserialization and excessive data exposure, then rank findings deterministically (optionally boosted by New Relic Ground Truth traffic and attack signals). Use when asked to review API scopes, find IDOR/BOLA, check authorization, or prioritize API security fixes.
 ---
 
 # api-authz-review — ソースコードの認可・スコープ監査
@@ -59,6 +59,10 @@ Gateway の設定が無い場合は、「スコープ検証がコード外にあ
 | F6 Mass Assignment | `@RequestBody` で JPA Entity を直接受け、`role` / `ownerId` / `status` 等を書き換えられる |
 | F7 SQLi | `@Query(nativeQuery = true)`、`JdbcTemplate`、`createNativeQuery`、`createQuery` での文字列連結 / `String.format` |
 | F8 過剰露出 | Entity をそのまま返す（DTO 無し）、`size` / `limit` に上限が無い |
+| F9 OS コマンドインジェクション | 外部入力（リクエストのパラメータ・ヘッダー・ボディ・アップロードされたファイル名）が `Runtime.exec` / `ProcessBuilder` に届く。特に `sh -c` / `cmd /c` に文字列連結で渡すもの |
+| F10 安全でないデシリアライズ | 外部入力を `ObjectInputStream.readObject` / `XMLDecoder` / XStream（許可リスト無し）で読む、Jackson の多態型を広く有効化（`enableDefaultTyping`、`@JsonTypeInfo(use = Id.CLASS)`）、SnakeYAML で `new Yaml()` を既定のまま外部入力に使う |
+
+F9 / F10 は、入力の出どころ（リクエスト → メソッド呼び出しの連鎖）を辿り、**外部入力が届く場合だけ**報告する。届くか判断できない場合は `needs_review`。
 
 OpenAPI 定義がある場合は、**定義のスコープと実装のスコープのズレ（ドリフト）**を F2 / F3 として報告する。
 

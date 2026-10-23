@@ -55,6 +55,12 @@ class RiskScoreTest(unittest.TestCase):
         f = finding("internal", ftype="F2", exposure="internal_only", gateway_enforced=True)
         self.assertEqual(rank([f])[0]["exploitability"], 1)
 
+    def test_rce_floor_is_max_impact(self):
+        for ftype in ("F9", "F10"):
+            row = rank([finding("rce", ftype=ftype, data_sensitivity="none", privilege="none")])[0]
+            self.assertEqual(row["impact"], 5)
+            self.assertEqual(row["tier"], "Critical")
+
     def test_deterministic_order(self):
         items = [finding(f"f{i}", traffic=i) for i in range(5)]
         a = [r["id"] for r in rank(items)]

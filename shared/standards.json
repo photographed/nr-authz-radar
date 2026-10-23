@@ -3,7 +3,8 @@
     "ASVS は 5.0 の章レベルで対応付けている。個別要件の番号は原文で確認すること。",
     "IPA は「安全なウェブサイトの作り方 改訂第7版」の節番号。原文で確認すること。",
     "OAT と AI エージェントの結び付けは本プラグインの分析であり、OWASP の公式な位置付けではない。",
-    "iast は New Relic Security Agent（IAST）で裏付けに使える検出カテゴリ。認可の不備（F2〜F5）は IAST の対象外。"
+    "iast は New Relic Security Agent（IAST）で裏付けに使える検出カテゴリ。認可の不備（F2〜F5）は IAST の対象外。",
+    "F9 と IAST の「Remote Code Execution」の対応は推定（IAST の一覧にコマンドインジェクションは明記されていない）。デモアプリで確認する。"
   ],
   "findings": {
     "F1": {
@@ -168,6 +169,44 @@
       "oat": [],
       "ipa": [],
       "iast": []
+    },
+    "F9": {
+      "title": "OS コマンドインジェクション",
+      "cwe": [
+        "CWE-78"
+      ],
+      "asvs": [
+        "V1"
+      ],
+      "owasp_top10": [
+        "A05"
+      ],
+      "owasp_api": [],
+      "oat": [],
+      "ipa": [
+        "1.2"
+      ],
+      "iast": [
+        "Remote Code Execution"
+      ]
+    },
+    "F10": {
+      "title": "安全でないデシリアライズ",
+      "cwe": [
+        "CWE-502"
+      ],
+      "asvs": [
+        "V1"
+      ],
+      "owasp_top10": [
+        "A08"
+      ],
+      "owasp_api": [],
+      "oat": [],
+      "ipa": [],
+      "iast": [
+        "Insecure Deserialization"
+      ]
     }
   },
   "detections": {
@@ -512,6 +551,48 @@
       ],
       "oat": [],
       "ipa": []
+    },
+    "D20": {
+      "title": "見たことのない外部への通信",
+      "cwe": [
+        "CWE-94",
+        "CWE-918"
+      ],
+      "asvs": [
+        "V15"
+      ],
+      "owasp_top10": [
+        "A05",
+        "A08"
+      ],
+      "owasp_api": [
+        "API7"
+      ],
+      "oat": [],
+      "ipa": []
+    },
+    "D21": {
+      "title": "RCE の試みで出る例外",
+      "cwe": [
+        "CWE-502",
+        "CWE-917",
+        "CWE-78"
+      ],
+      "asvs": [
+        "V1",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A05",
+        "A08"
+      ],
+      "owasp_api": [],
+      "oat": [
+        "OAT-014"
+      ],
+      "ipa": [
+        "1.2"
+      ]
     }
   }
 }
