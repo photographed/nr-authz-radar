@@ -8,6 +8,8 @@
 ## チェック項目
 
 ### R01 データが届いているか — 要検証
+
+確認するデータソースと、その優先順位は `shared/data-sources.md` §1 に従う（必須 → 推奨 → 任意の順）。
 ```sql
 SELECT count(*) FROM Transaction, TransactionError, Span, PageView, AjaxRequest, Log
 WHERE appName = '{appName}' OR entity.name = '{appName}'
@@ -85,6 +87,18 @@ NRQL では判定できない。次の順で判定する。
 
 ### R10 MCP の認証方式
 API Key で接続している場合、OAuth 専用のツールは使えない。使えなかったツールを一覧にして報告する。
+
+### R12 トランザクション名の品質（API エンドポイントとして使えるか）
+`shared/data-sources.md` §2 の基準で判定する。
+```sql
+SELECT count(*) FROM Transaction
+WHERE appName = '{appName}' AND transactionType = 'Web'
+FACET name SINCE 1 day ago LIMIT MAX
+```
+- 名前が数種類しかなく、`dispatcherServlet` 等にまとめられている → **まとめられすぎ**。エンドポイント別の検知（D03〜D05、D12）とコード監査との突き合わせが不可
+- 数字だけのパス要素（`/12345`）や UUID を含む名前が多い → **細かすぎ**。metric grouping issue の恐れ
+- パスや HTTP メソッドを含まない（`OrderController/getOrder`）→ 突き合わせはハンドラ名で行う。パスベースの命名を推奨
+- 判定結果は改善項目の上位に置く（**ここが崩れていると、他の検知の多くが API 単位で機能しない**）
 
 ### R11 送ってしまっている個人データ（プライバシー監査）
 `shared/privacy.md` に基づき、**検知のために送る必要のない個人データ**が入っていないかを確認する。

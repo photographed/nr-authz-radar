@@ -488,6 +488,19 @@
       "owasp_api": [],
       "oat": [],
       "ipa": []
+    },
+    "D19": {
+      "title": "画面から呼ばれている API（Ajax）",
+      "cwe": [],
+      "asvs": [
+        "V15"
+      ],
+      "owasp_top10": [],
+      "owasp_api": [
+        "API9"
+      ],
+      "oat": [],
+      "ipa": []
     }
   }
 }

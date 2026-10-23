@@ -215,6 +215,15 @@ FACET name SINCE 30 days ago LIMIT MAX
 ```
 - `api-authz-review` のエンドポイント一覧と突き合わせる。
 
+### D19 画面から呼ばれている API（Ajax）— 前提 BRW
+```sql
+SELECT count(*) FROM AjaxRequest
+WHERE appName = '{browserAppName}'
+FACET httpMethod, groupedRequestUrl SINCE 7 days ago LIMIT MAX
+```
+- D16（サーバーで観測された API）と、`api-authz-review` のエンドポイント一覧の3つを突き合わせる（`shared/data-sources.md` §3）。
+- **サーバーでは呼ばれているのに画面からは呼ばれていない API** は、モバイル・外部連携向けか、アプリを経由しない直接呼び出しの可能性がある。用途を確認し、用途が不明なら露出度を `mobile` または `external` として優先度に反映する。
+
 ### D17 新しい種類の例外（A10）— 前提なし
 ```sql
 SELECT count(*), earliest(timestamp) FROM TransactionError
