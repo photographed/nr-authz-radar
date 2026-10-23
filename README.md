@@ -156,8 +156,16 @@ public Order find(Long id) { ... }
 python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/terraform
 ```
 
-- **今の段階とデータソースで動くアラートだけを Terraform として生成**します（12種類。定義は [`shared/alerts.json`](shared/alerts.json)）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出ます。
-- CRITICAL と HIGH で Slack のチャンネルを分けます。CRITICAL は Workflow Automation で情報を集め、Autopilot（有効な場合。iRCA の結果も使う）に調査させてから通知します。
+- **今の段階とデータソースで動くアラートだけを Terraform として生成**します（定義は [`shared/alerts.json`](shared/alerts.json)）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出ます。
+- **証拠の強さで振り分けます**（偽陽性への対策）:
+
+  | 証拠の強さ | 例 | 通知 |
+  |---|---|---|
+  | **証拠** | D01（他人のデータを返した）、D07（注入された形の SQL が実行された） | **CRITICAL**。Workflow Automation で情報を集め、Autopilot（有効な場合。iRCA の結果も使う）に調査させてから通知 |
+  | 強い兆候 | D02、D06、D21、D23 | HIGH（静かなチャンネル）。導入直後（`learning_mode = true`）は通知しない |
+  | 異常 | D03、D04、D10、D12 など | **既定では生成しない**。`--include-anomaly` で、通知しない別のポリシーに入れて日次で確認 |
+
+- 既定で生成されるアラートは S3 でも6本。異常は単独で攻撃と判断しない（偽陽性が多いため）
 - ランブックは New Relic Knowledge に登録して Autopilot が参照できる形です（[`templates/knowledge-runbooks/`](templates/knowledge-runbooks/)）。
 - 適用は利用者が行います（生成のみ）。
 
@@ -166,6 +174,19 @@ python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/te
 | Terraform（アラート条件・ポリシー・Workflow・Slack） | 構文チェック（`terraform fmt`）のみ。provider を使った `terraform validate` は未実施 |
 | Workflow Automation（`templates/workflow-automation/security-triage.yaml`） | **下書き・未検証**。一部のアクション名・入出力の書き方は公式テンプレートと照合が必要 |
 | Slack 通知の形式・Autopilot のプロンプト・ランブック | 完成 |
+
+## コストとトークン
+
+- **定期の Hunt は `scripts/hunt.py`（NerdGraph で NRQL を直接実行。AI を使わない）**。毎日は軽量（`--levels evidence,strong`。最大7クエリ）、週1回は全部（最大21クエリ）
+- Ground Truth MCP は対話での調査に使い、**NRQL を実行するツールだけ**に絞る。Autopilot は CRITICAL（証拠）のアラートからだけ
+- Claude のトークン: SKILL.md を短くし（24.5KB → 9.4KB）、`catalog.py`（必要な節だけを読む）・`hunt.py` の要約・`inventory_java.py`（読むメソッドを絞る）・差分モード・作業ファイルの再利用で、読む量を減らしています
+- 詳細と、New Relic に確認すべき料金の項目は [`shared/cost.md`](shared/cost.md)
+
+```bash
+NEW_RELIC_API_KEY=... python3 scripts/hunt.py --app shop-api --account-id 1234567 --stage S2 --sources spans --levels evidence,strong
+python3 scripts/inventory_java.py src/main/java --changed-since origin/main     # PR の変更分だけ
+python3 scripts/catalog.py index --stage S2                                       # 実行できる検知の一覧
+```
 
 ## 対応範囲（何をカバーし、何をカバーしないか）
 
@@ -318,6 +339,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.7.0** Spring Boot 4.1 でのテスト、XML 候補の自動生成、Python・Node.js・Ruby・Go・PHP・.NET の S2 計装
 - [x] **v0.8.0** REST 以外の方式（GraphQL・SOAP・gRPC・WebSocket・JSON-RPC）への対応: `api.protocol`・`api.operation`、方式に依存しない検知 D22・D23、R15、U06、F11・F12、Java ライブラリの GraphQL・STOMP 対応
 - [x] **v0.9.0** 英語対応（README・はじめに・サンプル・スクリプトの `--lang en`・Skill の出力言語）、はじめにのドキュメント、サンプルの実行結果
+- [x] **v0.10.0** 証拠の強さ（証拠 / 強い兆候 / 異常）による報告とアラートの振り分け、`hunt.py`（NerdGraph）、トークン削減（短い SKILL.md・`catalog.py`・`inventory_java.py`・差分モード）、コストの整理
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考

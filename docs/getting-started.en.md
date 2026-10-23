@@ -27,7 +27,7 @@ You ── read the report, review the files (configuration, patches) and **appl
 |---|---|---|
 | `skills/` | Instructions for Claude: `api-authz-review` (code review) and `nr-appsec-guard` (readiness, detection, investigation, instrumentation advice and alert generation with New Relic) | Claude |
 | `shared/` | Shared specifications (attributes, goals and stages, data sources, API styles, ranking, privacy, standards mapping). Written in Japanese; Claude reads them in any language | Claude and people |
-| `scripts/` | Deterministic tools: `risk_score.py` (ranking), `gen_alerts.py` (alerts), `gen_xml_candidates.py` (XML instrumentation candidates) | **Run by Claude** (you can run them too) |
+| `scripts/` | Deterministic tools: `risk_score.py` (ranking), `gen_alerts.py` (alerts), `hunt.py` (detections via NerdGraph, no AI), `inventory_java.py` (endpoint inventory), `catalog.py` (print only the sections you need), `gen_xml_candidates.py` (XML candidates) | **Run by Claude** (you can run them too) |
 | `templates/` | Templates for New Relic (Terraform, Workflow Automation, Slack, Autopilot prompt, runbooks) | Filled in by Claude → **applied by you** |
 | `instrumentation/` | **Code you add to your application**: a Java library, and small files for Python, Node.js, Ruby, Go, PHP and .NET | **Developers** (Claude does not run it; it proposes patches that use it) |
 | `examples/`, `docs/samples/` | A sample application, and real outputs and example reports | People |
@@ -127,6 +127,14 @@ python3 scripts/gen_alerts.py --stage S0 --sources spans --out out/terraform --l
 python3 scripts/gen_xml_candidates.py path/to/src/main/java --xml out/authz-extension.xml --report out/xml-candidates.md --lang en
 ```
 
+### Scheduled runs (hunts without AI)
+```bash
+export NEW_RELIC_API_KEY=...   # a User key
+python3 scripts/hunt.py --app shop-api --account-id 1234567 --stage S2 --sources spans --levels evidence,strong --lang en
+# output: .authz-radar/hunt/hunt-summary.md (summary grouped by evidence level)
+```
+Run it from cron or CI. You can let Claude read the summary to interpret it (cheap, because it is short).
+
 ## 6. FAQ
 
 | Question | Answer |
@@ -137,4 +145,6 @@ python3 scripts/gen_xml_candidates.py path/to/src/main/java --xml out/authz-exte
 | Is it useless without custom attributes? | No. Much works at stage S0 (inventory, usage, SQL injection and RCE signals, and more). **Only evidence of a successful IDOR needs the two stage S2 attributes** |
 | What about GraphQL, WebSocket and others? | Supported, but status-code based detections are REST-only. Details: [`shared/protocols.md`](../shared/protocols.md) (Japanese) |
 | Can I use it in English? | Yes. Ask in English and Claude answers in English. Script reports take `--lang en`. The reference specs are in Japanese, which Claude reads fine |
+| Won't it produce lots of false positives? | Results are split by evidence level. Only *evidence* (D01, D07) and *strong signals* notify; volume or ratio *anomalies* do not notify by default. See [`docs/how-it-works.md`](how-it-works.md) (Japanese) |
+| What about cost? | Scheduled hunts use `hunt.py` without AI; Autopilot is called only from evidence-level alerts. See [`shared/cost.md`](../shared/cost.md) (Japanese) |
 | How well is it validated? | Scripts and instrumentation code are tested. **NRQL, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (planned in Phase 5) |

@@ -41,8 +41,22 @@ Most other things — API inventory, usage, SQL injection and RCE signals, authe
 | `api-authz-review` (Skill) | Code review: endpoints and scopes (REST, GraphQL, SOAP, gRPC, WebSocket), IDOR/BOLA, BFLA, mass assignment, SQL injection, OS command injection, unsafe deserialization, GraphQL and WebSocket hardening; deterministic ranking |
 | `nr-appsec-guard` (Skill) | With New Relic: readiness (R01–R15), usage (U01–U06), detection (D01–D23), investigation (I01–I07), instrumentation advice, alert / Workflow Automation / Slack generation; adapts to Autopilot and iRCA being on or off |
 | `instrumentation/` | Code for your application: a Java (Spring Boot / Spring Security) library for REST, GraphQL and STOMP, tested on Spring Boot 3.5 and 4.1; small files for Python, Node.js, Ruby, Go (tested), PHP (API names unverified) and .NET (not compiled). Pseudonymous user IDs are identical across all languages |
-| `scripts/` | `risk_score.py` (ranking), `gen_alerts.py` (Terraform for the alerts your stage supports; `--lang en`), `gen_xml_candidates.py` (Java agent XML candidates; `--lang en`) |
+| `scripts/` | `risk_score.py` (ranking), `gen_alerts.py` (Terraform routed by evidence level; `--lang en`), `hunt.py` (detections via NerdGraph, no AI), `inventory_java.py` (endpoint inventory), `catalog.py` (read only what you need), `gen_xml_candidates.py` (Java agent XML candidates) |
 | `templates/` | Terraform, Workflow Automation (draft), Slack message format, Autopilot prompt, six New Relic Knowledge runbooks |
+
+## False positives, cost and tokens
+
+**Evidence levels.** Every detection is labelled *evidence* (D01: the app returned someone else's data; D07: an injected-looking SQL statement ran), *strong signal* (D02, D06, D21, D23) or *anomaly* (D03, D04, D10, D12, …). Only evidence pages (CRITICAL, and may call Autopilot); strong signals go to a quiet channel and stay muted during a learning period; anomalies are not generated as alerts by default and are never called attacks. Like IAST, the evidence level relies on what the application itself observed, not on traffic patterns.
+
+**Cost.** Scheduled hunts run through `scripts/hunt.py` (NerdGraph, no AI): a light daily run (`--levels evidence,strong`, up to 7 queries) and a full weekly run (up to 21). Use the Ground Truth MCP for interactive investigation with its NRQL tools only; Autopilot is called only from evidence-level alerts. Pricing depends on your contract — see [`shared/cost.md`](shared/cost.md) (Japanese) for what to confirm with New Relic.
+
+**Tokens.** Short SKILL.md routers (24.5KB → 9.4KB), `catalog.py` (read only the sections you need; the index is 2.4KB versus 40.7KB of catalogs), `hunt.py` summaries, `inventory_java.py` (read only flagged methods; `--changed-since` for PRs) and reusable work files in `.authz-radar/`.
+
+```bash
+NEW_RELIC_API_KEY=... python3 scripts/hunt.py --app shop-api --account-id 1234567 --stage S2 --sources spans --levels evidence,strong --lang en
+python3 scripts/inventory_java.py src/main/java --changed-since origin/main
+python3 scripts/catalog.py index --stage S2 --lang en
+```
 
 ## How the ranking works
 
@@ -71,7 +85,7 @@ Details (Japanese): the "対応範囲" section of [README.md](README.md) and [`s
 
 ## Status
 
-Version **0.9.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
+Version **0.10.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
 
 ## Language
 

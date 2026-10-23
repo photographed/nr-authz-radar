@@ -9,7 +9,8 @@
 # switch the behaviour with the inputs below instead of keeping four templates.
 #
 # Trigger: an Alert Workflow (templates/terraform/workflows.tf, CRITICAL only) that passes {{ issueId }}.
-# Only CRITICAL issues come here, to stay within Autopilot's rate limit.
+# Only CRITICAL issues come here. CRITICAL is reserved for evidence-level detections (D01, D07; see
+# shared/detections.json), so Autopilot is called rarely and almost never on a false positive.
 
 name: authz-radar-security-triage
 description: Enrich a CRITICAL authz-radar issue, optionally ask Autopilot (with iRCA), and post to Slack.

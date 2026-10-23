@@ -3,7 +3,7 @@
 `templates/workflow-automation/security-triage.yaml` の `askAutopilot` に埋め込んでいるプロンプトの説明版。**変更するときは両方を揃える。**
 
 ## 前提
-- Autopilot には上限がある（1組織あたり1時間100リクエスト）。**CRITICAL の Issue だけ**をこのプロンプトに渡す。
+- Autopilot には上限がある（1組織あたり1時間100リクエスト）。**CRITICAL の Issue だけ**をこのプロンプトに渡す。CRITICAL は証拠の強さが「証拠」の検知（D01・D07）に限っているので、呼び出しは少なく、空振りもほぼ無い。
 - Autopilot は推奨のみで、操作は実行しない。ブロック・トークン失効・WAF の変更は人の承認で行う。
 - Knowledge に `templates/knowledge-runbooks/` を登録しておくと、Autopilot が調査中に参照する。
 
