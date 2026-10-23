@@ -1,6 +1,6 @@
 # 認可テレメトリ属性仕様
 
-> **スキーマバージョン: 0.2**（プラグイン本体とは別に管理する。アプリ側が実装する約束事のため、属性の追加・名前変更・削除のたびに上げ、`CHANGELOG.md` に記録する）
+> **スキーマバージョン: 0.3**（プラグイン本体とは別に管理する。アプリ側が実装する約束事のため、属性の追加・名前変更・削除のたびに上げ、`CHANGELOG.md` に記録する）
 
 `nr-appsec-guard`（実行時検知）と `api-authz-review`（コード監査）の両方がこの仕様を前提にする。
 **属性名は全言語共通**。同じ NRQL / アラートが言語を問わず動くようにするため、勝手に名前を変えないこと。
@@ -16,8 +16,8 @@ Errors Inbox・Performance Risks Inbox・既定のアラートでは原理的に
 | 段階 | 属性 |
 |---|---|
 | S1 | `enduser.id` |
-| **S2（最小限のコード）** | **`resource.owner_match`、`authz.decision`**（＋ `enduser.id`）。これだけで D01（IDOR 成功の証拠）が使える |
-| S3 | 下表の残り |
+| **S2（最小限のコード）** | **`resource.owner_match`、`authz.decision`**（＋ `enduser.id`）。これだけで D01（IDOR 成功の証拠）が使える。**REST 以外の方式では ＋ `api.protocol`・`api.operation`**（`shared/protocols.md`） |
+| S3 | 下表の残り（`resource.check_count` など） |
 
 S2 以外の属性には代わりの手段がある（`shared/goals.md`）。**まず S2 から入れる。**
 
@@ -35,6 +35,9 @@ S2 以外の属性には代わりの手段がある（`shared/goals.md`）。**�
 | `authz.deny_reason` | string | `owner_mismatch` / `scope_missing` / `role_missing` / `tenant_mismatch` / `unauthenticated` | deny時必須 | 拒否理由（列挙値のみ） |
 | `resource.type` | string | `order` | **必須** | アクセス対象リソースの種別 |
 | `resource.owner_match` | boolean | `true` / `false` | **必須（IDOR検知の核）** | データ取得層で「要求者 = 所有者 / 同テナントか」を判定した結果 |
+| `api.protocol` | string | `rest` / `graphql` / `soap` / `grpc` / `websocket` / `jsonrpc` | REST 以外は必須 | API の方式。ステータスコードを使う検知が使えるかの判断に使う（`shared/protocols.md`） |
+| `api.operation` | string | `Query.order` / `getOrder` / `/topic/orders/{id}` | REST 以外は必須 | **サーバー側で決まる**操作の名前（GraphQL のフィールド、SOAP の操作、WebSocket の宛先のテンプレート）。**クライアントが付ける GraphQL の operation 名は使わない**（偽装できるため） |
+| `resource.check_count` | int | `37` | 任意（S3） | 1つのトランザクションで行った所有者照合の回数。GraphQL のエイリアスや WebSocket での一括列挙の検知（D23） |
 | `client.type` | string | `web` / `mobile` / `api_key` / `service` / `unknown` | 推奨 | 呼び出し元の種別。アプリ解析による API 直叩きの検出用 |
 | `client.asn` | string | `AS2516` | 推奨 | 送信元の AS 番号（エッジや GeoIP で判定）。**IP を送らずに**分散アクセスを粗く検知するため |
 | `client.country` | string | `JP` | 推奨 | 送信元の国。API キーの異常利用・地域制限の検討用 |
@@ -64,7 +67,7 @@ resource.owner_match = false AND authz.decision = 'allow'
 4. **High-security mode との関係**: HSM 有効時は custom attribute / user 属性が送れない。
    その場合は Readiness 監査で「属性ベース検知は不可」と判定し、代替（Logs 経由）を提示する。
 5. **上限**: エージェントには custom attribute 数・値長の上限がある（目安: 1イベント64個、値255文字。
-   エージェント・バージョンごとに要確認）。本仕様は最大15個に収めている。
+   エージェント・バージョンごとに要確認）。本仕様は最大18個に収めている。
 
 ## 計装の手段（Java の場合）
 

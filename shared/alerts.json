@@ -7,71 +7,212 @@
   ],
   "alerts": [
     {
-      "id": "D01", "name": "IDOR 成功の証拠", "stage": "S2", "requires": [], "runbook": "idor.md",
-      "type": "static", "window_seconds": 300,
+      "id": "D01",
+      "name": "IDOR 成功の証拠",
+      "stage": "S2",
+      "requires": [],
+      "runbook": "idor.md",
+      "type": "static",
+      "window_seconds": 300,
       "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND resource.owner_match IS FALSE AND authz.decision = 'allow' AND (authz.required_scope IS NULL OR authz.required_scope NOT LIKE '{bypassScopePattern}') FACET name",
-      "critical": {"operator": "above", "threshold": 0}
+      "critical": {
+        "operator": "above",
+        "threshold": 0
+      }
     },
     {
-      "id": "D02", "name": "他人のリソースへのアクセス試行", "stage": "S2", "requires": [], "runbook": "idor.md",
-      "type": "static", "window_seconds": 600,
+      "id": "D02",
+      "name": "他人のリソースへのアクセス試行",
+      "stage": "S2",
+      "requires": [],
+      "runbook": "idor.md",
+      "type": "static",
+      "window_seconds": 600,
       "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND resource.owner_match IS FALSE AND authz.decision = 'deny' FACET enduser.id",
-      "critical": {"operator": "above", "threshold": 20},
-      "warning": {"operator": "above", "threshold": 5}
+      "critical": {
+        "operator": "above",
+        "threshold": 20
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 5
+      }
     },
     {
-      "id": "D03", "name": "ID 列挙", "stage": "S1", "requires": [], "runbook": "idor.md",
-      "type": "static", "window_seconds": 900,
+      "id": "D03",
+      "name": "ID 列挙",
+      "stage": "S1",
+      "requires": [],
+      "runbook": "idor.md",
+      "type": "static",
+      "window_seconds": 900,
       "nrql": "SELECT uniqueCount(request.uri) FROM Transaction WHERE appName = '{appName}' AND name LIKE '%{%}%' FACET enduser.id",
-      "critical": {"operator": "above", "threshold": 50},
-      "warning": {"operator": "above", "threshold": 15}
+      "critical": {
+        "operator": "above",
+        "threshold": 50
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 15
+      }
     },
     {
-      "id": "D04", "name": "403 / 404 比率の急上昇", "stage": "S0", "requires": [], "runbook": "recon.md",
-      "type": "baseline", "window_seconds": 300,
+      "id": "D04",
+      "name": "403 / 404 比率の急上昇",
+      "stage": "S0",
+      "requires": [],
+      "runbook": "recon.md",
+      "type": "baseline",
+      "window_seconds": 300,
       "nrql": "SELECT percentage(count(*), WHERE http.statusCode IN (403, 404)) FROM Transaction WHERE appName = '{appName}' AND transactionType = 'Web'",
-      "critical": {"operator": "above", "threshold": 4},
-      "warning": {"operator": "above", "threshold": 3}
+      "critical": {
+        "operator": "above",
+        "threshold": 4
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 3
+      }
     },
     {
-      "id": "D06", "name": "DB 構文エラー", "stage": "S0", "requires": [], "runbook": "sqli.md",
-      "type": "static", "window_seconds": 300,
+      "id": "D06",
+      "name": "DB 構文エラー",
+      "stage": "S0",
+      "requires": [],
+      "runbook": "sqli.md",
+      "type": "static",
+      "window_seconds": 300,
       "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.sql.SQLSyntaxErrorException', 'org.springframework.jdbc.BadSqlGrammarException', 'org.hibernate.exception.SQLGrammarException') OR error.message LIKE '%syntax error%' OR error.message LIKE '%You have an error in your SQL syntax%' OR error.message LIKE '%unterminated quoted string%') FACET transactionName",
-      "critical": {"operator": "above", "threshold": 9},
-      "warning": {"operator": "above", "threshold": 0}
+      "critical": {
+        "operator": "above",
+        "threshold": 9
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 0
+      }
     },
     {
-      "id": "D07", "name": "注入らしい SQL 文", "stage": "S0", "requires": ["spans"], "runbook": "sqli.md",
-      "type": "static", "window_seconds": 300,
+      "id": "D07",
+      "name": "注入らしい SQL 文",
+      "stage": "S0",
+      "requires": [
+        "spans"
+      ],
+      "runbook": "sqli.md",
+      "type": "static",
+      "window_seconds": 300,
       "nrql": "SELECT count(*) FROM Span WHERE entity.name = '{appName}' AND db.statement RLIKE '(?i).*(pg_sleep|waitfor delay|benchmark|information_schema|union select|union all select).*' FACET name",
-      "critical": {"operator": "above", "threshold": 0}
+      "critical": {
+        "operator": "above",
+        "threshold": 0
+      }
     },
     {
-      "id": "D10", "name": "認証失敗の急増", "stage": "S0", "requires": [], "runbook": "auth.md",
-      "type": "baseline", "window_seconds": 300,
+      "id": "D10",
+      "name": "認証失敗の急増",
+      "stage": "S0",
+      "requires": [],
+      "runbook": "auth.md",
+      "type": "baseline",
+      "window_seconds": 300,
       "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND http.statusCode = 401",
-      "critical": {"operator": "above", "threshold": 4},
-      "warning": {"operator": "above", "threshold": 3}
+      "critical": {
+        "operator": "above",
+        "threshold": 4
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 3
+      }
     },
     {
-      "id": "D11", "name": "少数アカウント × 多数のネットワーク", "stage": "S3", "requires": [], "runbook": "auth.md",
-      "type": "static", "window_seconds": 3600,
+      "id": "D11",
+      "name": "少数アカウント × 多数のネットワーク",
+      "stage": "S3",
+      "requires": [],
+      "runbook": "auth.md",
+      "type": "static",
+      "window_seconds": 3600,
       "nrql": "SELECT uniqueCount(client.asn) FROM Transaction WHERE appName = '{appName}' FACET enduser.id",
-      "critical": {"operator": "above", "threshold": 9},
-      "warning": {"operator": "above", "threshold": 4}
+      "critical": {
+        "operator": "above",
+        "threshold": 9
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 4
+      }
     },
     {
-      "id": "D12", "name": "ブラウザを経由しない API 直叩き", "stage": "S0", "requires": ["browser_dt"], "runbook": "automation.md",
-      "type": "baseline", "window_seconds": 600,
+      "id": "D12",
+      "name": "ブラウザを経由しない API 直叩き",
+      "stage": "S0",
+      "requires": [
+        "browser_dt"
+      ],
+      "runbook": "automation.md",
+      "type": "baseline",
+      "window_seconds": 600,
       "nrql": "SELECT percentage(count(*), WHERE parent.type IS NULL) FROM Transaction WHERE appName = '{appName}' AND transactionType = 'Web'",
-      "warning": {"operator": "above", "threshold": 3}
+      "warning": {
+        "operator": "above",
+        "threshold": 3
+      }
     },
     {
-      "id": "D21", "name": "RCE の試みで出る例外", "stage": "S0", "requires": [], "runbook": "rce.md",
-      "type": "static", "window_seconds": 300,
+      "id": "D21",
+      "name": "RCE の試みで出る例外",
+      "stage": "S0",
+      "requires": [],
+      "runbook": "rce.md",
+      "type": "static",
+      "window_seconds": 300,
       "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.io.InvalidClassException', 'java.io.StreamCorruptedException', 'com.fasterxml.jackson.databind.exc.InvalidTypeIdException', 'org.springframework.expression.spel.SpelEvaluationException', 'ognl.OgnlException', 'javax.naming.NamingException') OR error.message LIKE '%Cannot run program%' OR error.message LIKE '%jndi:%') FACET transactionName",
-      "critical": {"operator": "above", "threshold": 4},
-      "warning": {"operator": "above", "threshold": 0}
+      "critical": {
+        "operator": "above",
+        "threshold": 4
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 0
+      }
+    },
+    {
+      "id": "D22",
+      "name": "認可拒否の急増（方式に依存しない）",
+      "stage": "S2",
+      "requires": [],
+      "runbook": "idor.md",
+      "type": "baseline",
+      "window_seconds": 300,
+      "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND authz.decision = 'deny'",
+      "critical": {
+        "operator": "above",
+        "threshold": 4
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 3
+      }
+    },
+    {
+      "id": "D23",
+      "name": "1リクエストで大量の所有者照合",
+      "stage": "S3",
+      "requires": [],
+      "runbook": "idor.md",
+      "type": "static",
+      "window_seconds": 300,
+      "nrql": "SELECT max(resource.check_count) FROM Transaction WHERE appName = '{appName}' AND resource.check_count IS NOT NULL FACET enduser.id",
+      "critical": {
+        "operator": "above",
+        "threshold": 49
+      },
+      "warning": {
+        "operator": "above",
+        "threshold": 19
+      }
     }
   ],
   "hunt_only": {

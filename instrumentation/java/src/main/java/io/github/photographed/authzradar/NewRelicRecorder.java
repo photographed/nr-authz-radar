@@ -27,6 +27,11 @@ public class NewRelicRecorder implements TelemetryRecorder {
     }
 
     @Override
+    public void transactionName(String category, String name) {
+        NewRelic.setTransactionName(category, name);
+    }
+
+    @Override
     public void expectedError(Throwable error, Map<String, ?> attributes) {
         NewRelic.noticeError(error, attributes, true);
     }

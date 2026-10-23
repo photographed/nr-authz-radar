@@ -11,6 +11,7 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 - `references/instrumentation-java.md` — Java の計装（S2 への最短経路）
 - `references/instrumentation-other-languages.md` — Python・Node.js・Ruby・Go・PHP・.NET の計装（S2）
 - `shared/goals.md` — **4つの目的・段階（S0〜S3）・レポートの書き方**（最初に読む）
+- `shared/protocols.md` — **API の方式（REST 以外）ごとの盲点と対策**
 - `shared/data-sources.md` — 必要なデータソース、トランザクション名の品質、API 設計の突き合わせ
 - `shared/attribute-spec.md` — 検知の前提となる属性
 - `shared/owasp-mapping.md` — 脅威とシグナルの対応
@@ -41,18 +42,18 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 | 目的 | 使うもの |
 |---|---|
 | ① 棚卸し | `api-authz-review` Skill（コード）＋ `references/usage.nrql.md` の U01・U02 |
-| ② 利用実態 | `references/usage.nrql.md`（U01〜U05） |
-| ③ 攻撃検知 | `references/detections.nrql.md`（D01〜D21） |
+| ② 利用実態 | `references/usage.nrql.md`（U01〜U06） |
+| ③ 攻撃検知 | `references/detections.nrql.md`（D01〜D23） |
 | ④ 調査 | `references/investigation.nrql.md`（I01〜I07） |
 
 どの目的でも、最初に **前提の確認**（Readiness）を行う。依頼が曖昧なら Readiness から始める。
 
 ### 前提の確認（Readiness）
-`references/readiness-checks.md` の R01〜R14 を順に実行し、**現在の段階（S0〜S3）とデータソース**を判定する。
+`references/readiness-checks.md` の R01〜R15 を順に実行し、**現在の段階（S0〜S3）とデータソース**を判定する。
 - 認可属性が届いているか、全エンドポイントに付いているか（計装漏れ）
 - High-security mode の有無（推定 + ユーザーに確認）
 - Browser / Mobile との分散トレーシング、Span の SQL 文、デプロイ記録
-- トランザクション名の品質（R12）、プライバシー（R11）
+- トランザクション名の品質（R12）、プライバシー（R11）、**API の方式（R15。WebSocket のメッセージが計装されていないと S2 の属性は捨てられる）**
 - サンプリングと保存期間（R13・R14。④ 調査の前提）
 - Errors Inbox / Performance Risks Inbox を MCP で扱えるか、**Autopilot / iRCA のオン・オフ**
 
@@ -63,6 +64,7 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 `references/detections.nrql.md` のうち、**現在の段階とデータソースで実行できるものだけ**を実行する。
 - 実行順: D01（IDOR 成功）→ A 認可 → B SQLi → E RCE → C 認証・AI エージェント → D 例外・変更相関
 - **D01 で1件でも見つかったら、他の検知より先にユーザーへ報告する。D20 と D21 が同じ時間帯に出たときも同様**（RCE の可能性が高い）。
+- **REST 以外の方式では D04・D10 は反応しない**（`shared/protocols.md`）。反応しないことを「安全」と書かず、D22 を使う。GraphQL はトランザクション名ではなく `api.operation` で集計する。
 - 「要検証」のクエリがエラーになったら、簡略化して再試行し、その旨を報告する。
 - 結果は脅威ごとに `strong` / `weak` / `none` / 判定不能（理由）で報告する。
 - 兆候がある場合は D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分ける。兆候の対象を深掘りするなら ④ 調査に進む。

@@ -207,6 +207,47 @@
       "iast": [
         "Insecure Deserialization"
       ]
+    },
+    "F11": {
+      "title": "GraphQL の防御不足（introspection・深さ・エイリアス）",
+      "cwe": [
+        "CWE-770",
+        "CWE-200"
+      ],
+      "asvs": [
+        "V4"
+      ],
+      "owasp_top10": [
+        "A06"
+      ],
+      "owasp_api": [
+        "API4",
+        "API8"
+      ],
+      "oat": [],
+      "ipa": [],
+      "iast": []
+    },
+    "F12": {
+      "title": "WebSocket の防御不足（Origin 確認・接続中の権限確認）",
+      "cwe": [
+        "CWE-1385",
+        "CWE-613"
+      ],
+      "asvs": [
+        "V4"
+      ],
+      "owasp_top10": [
+        "A01",
+        "A07"
+      ],
+      "owasp_api": [
+        "API2",
+        "API8"
+      ],
+      "oat": [],
+      "ipa": [],
+      "iast": []
     }
   },
   "detections": {
@@ -566,6 +607,52 @@
       ],
       "ipa": [
         "1.2"
+      ]
+    },
+    "D22": {
+      "title": "認可拒否の急増（方式に依存しない）",
+      "cwe": [
+        "CWE-862",
+        "CWE-863"
+      ],
+      "asvs": [
+        "V8",
+        "V16"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1",
+        "API5"
+      ],
+      "oat": [],
+      "ipa": [
+        "1.11"
+      ]
+    },
+    "D23": {
+      "title": "1リクエストで大量の所有者照合",
+      "cwe": [
+        "CWE-639",
+        "CWE-770"
+      ],
+      "asvs": [
+        "V8",
+        "V4"
+      ],
+      "owasp_top10": [
+        "A01"
+      ],
+      "owasp_api": [
+        "API1",
+        "API4"
+      ],
+      "oat": [
+        "OAT-011"
+      ],
+      "ipa": [
+        "1.11"
       ]
     }
   },

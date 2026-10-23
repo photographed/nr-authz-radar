@@ -24,7 +24,7 @@ PRIVILEGE = {"none": 0, "user": 1, "elevated": 3, "admin": 5}
 # Base exploitability per finding type (see shared/risk-scoring.md)
 BASE_EXPLOIT = {"F1": 5, "F2": 3, "F3": 3, "F4": 4,
                 "F5": 4, "F6": 3, "F7": 5, "F8": 2,
-                "F9": 5, "F10": 4}
+                "F9": 5, "F10": 4, "F11": 3, "F12": 4}
 # Minimum impact regardless of the endpoint's own data
 # (SQLi reaches the whole DB; RCE takes over the server)
 IMPACT_FLOOR = {"F7": 4, "F9": 5, "F10": 5}

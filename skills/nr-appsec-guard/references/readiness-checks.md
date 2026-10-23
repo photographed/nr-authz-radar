@@ -98,7 +98,28 @@ FACET name SINCE 1 day ago LIMIT MAX
 - 名前が数種類しかなく、`dispatcherServlet` 等にまとめられている → **まとめられすぎ**。エンドポイント別の検知（D03〜D05、D12）とコード監査との突き合わせが不可
 - 数字だけのパス要素（`/12345`）や UUID を含む名前が多い → **細かすぎ**。metric grouping issue の恐れ
 - パスや HTTP メソッドを含まない（`OrderController/getOrder`）→ 突き合わせはハンドラ名で行う。パスベースの命名を推奨
+- GraphQL・SOAP・JSON-RPC・WebSocket は、トランザクション名ではなく `api.operation` を API の単位として使う（`shared/protocols.md`）。GraphQL のトランザクション名はクライアントが偽装できる
 - 判定結果は改善項目の上位に置く（**ここが崩れていると、他の検知の多くが API 単位で機能しない**）
+
+### R15 API の方式 — 要検証
+`shared/protocols.md` の盲点を確認する。
+```sql
+SELECT count(*) FROM Transaction WHERE appName = '{appName}'
+FACET cases(
+  WHERE name LIKE '%GraphQL%' OR request.uri LIKE '%graphql%' AS 'graphql',
+  WHERE http.statusCode = 101 AS 'websocket-handshake',
+  WHERE name LIKE '%WebSocket%' AS 'websocket-message',
+  WHERE name LIKE '%SOAP%' OR name LIKE '%Spring-WS%' OR request.uri LIKE '%soap%' AS 'soap',
+  WHERE name LIKE '%gRPC%' OR name LIKE '%grpc%' AS 'grpc'
+) SINCE 1 day ago
+```
+```sql
+SELECT count(*) FROM Transaction WHERE appName = '{appName}' FACET api.protocol SINCE 1 day ago
+```
+- `websocket-handshake` があるのに `websocket-message` が無い → **WebSocket のメッセージが計装されていない。S2 の属性は送っても捨てられている。** 改善項目の上位に挙げる（重大度 High）
+- GraphQL・SOAP・JSON-RPC があるのに `api.protocol` / `api.operation` が無い → D04・D10 は反応しない。D22 が使えるように計装を推奨する
+- GraphQL があるなら、トランザクション名はクライアントの operation 名から作られる（偽装できる）ことを報告に書く
+- 名前のパターンはエージェントや設定によって異なる。結果が 0 件でも方式が無いとは限らないので、ユーザーに確認する
 
 ### R11 送ってしまっている個人データ（プライバシー監査）
 `shared/privacy.md` に基づき、**検知のために送る必要のない個人データ**が入っていないかを確認する。

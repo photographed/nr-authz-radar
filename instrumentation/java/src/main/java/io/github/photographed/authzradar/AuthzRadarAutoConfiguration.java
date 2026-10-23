@@ -72,6 +72,26 @@ public class AuthzRadarAutoConfiguration {
     }
 
     @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = {"org.aspectj.lang.annotation.Aspect",
+            "org.springframework.graphql.data.method.annotation.QueryMapping"})
+    static class GraphQl {
+        @Bean
+        public GraphQlAspect authzRadarGraphQlAspect(AuthzTelemetry telemetry) {
+            return new GraphQlAspect(telemetry, new ScopeExtractor(), new PrincipalSupport(telemetry));
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = {"org.aspectj.lang.annotation.Aspect",
+            "org.springframework.messaging.handler.annotation.MessageMapping"})
+    static class Stomp {
+        @Bean
+        public StompAspect authzRadarStompAspect(AuthzTelemetry telemetry) {
+            return new StompAspect(telemetry, new ScopeExtractor(), new PrincipalSupport(telemetry));
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnClass(WebMvcConfigurer.class)
     static class WebMvc implements WebMvcConfigurer {

@@ -32,6 +32,12 @@
 どの言語でも、テストは **New Relic の API を差し替えて** 行っている（エージェント無しで、どの属性がどう送られるかを確認）。
 実際のエージェントを入れたアプリでの確認は Phase 5 で行う。
 
+## REST 以外の方式
+
+- **WebSocket**: どの言語でも、メッセージの処理をトランザクションの中で行う。そうしないと属性は捨てられる。各言語の方法は `shared/protocols.md` §3（Node.js `startWebTransaction`、Python `web_transaction` / `background_task`、Ruby `Tracer.in_transaction`、Go `app.StartTransaction`、.NET `[Transaction]`）。
+- **GraphQL・SOAP・JSON-RPC・WebSocket**: `api.protocol` と、サーバー側で決まる `api.operation` を、各言語の属性 API で送る（例: Python `newrelic.agent.add_custom_attribute("api.operation", "Query.order")`）。
+- 1回のリクエストで何度も所有者照合を行う方式（GraphQL のエイリアスなど）では、ファイルの `RequestState` を **リクエスト（またはメッセージ）単位で1つ** 使う。リゾルバごとに作り直すと、一致しなかったことが後の一致で上書きされる。
+
 ## expected error の扱い
 
 拒否を expected error として送ると、Errors Inbox でまとまって見えつつ、エラー率や Apdex を悪化させない。

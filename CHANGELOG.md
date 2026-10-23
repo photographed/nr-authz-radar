@@ -7,7 +7,22 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-23
+
 ### Added
+- `shared/protocols.md`: REST・GraphQL・SOAP・gRPC・WebSocket・JSON-RPC ごとの盲点と対策。Java エージェント 9.5.0 の計装を確認（GraphQL・Spring-WS・CXF・gRPC はあり、**WebSocket は無し**）。GraphQL のトランザクション名がクライアントの operation 名（偽装できる）から作られることを確認
+- 属性（スキーマ 0.3）: `api.protocol`、`api.operation`（サーバー側で決まる名前）、`resource.check_count`
+- 検知: D22（認可拒否の急増。方式に依存しない）、D23（1リクエストで大量の所有者照合。GraphQL のエイリアス等）。どちらもアラートに追加（12種類）
+- 前提の確認 R15（API の方式。WebSocket のメッセージが計装されていない状態を検出）、利用実態 U06（方式・操作ごと）
+- コード監査: GraphQL・SOAP・gRPC・WebSocket のエンドポイントの棚卸し、F11（GraphQL の防御不足）、F12（WebSocket の防御不足）
+- Java ライブラリ: Spring for GraphQL のリゾルバ、Spring STOMP のメッセージ（メッセージごとにトランザクションを作る）に対応。HTTP リクエストの外での状態管理
+- 各言語の WebSocket でトランザクションを作る API（パッケージで確認）
+
+### Changed
+- D04・D10 を「REST 専用」と明記（反応しないことを安全と読まない）
+- 拒否の理由は最初に記録されたものを優先する（外側の処理が `owner_mismatch` を上書きしていた問題の修正）
+
+### Docs
 - README に「いつ使うか」（目的ごとの頻度）
 - `docs/how-it-works.md`: IDOR などの判定の仕組み（4つの層と、それぞれで言えること）、限界
 
