@@ -58,6 +58,22 @@ class GoalStructureTest(unittest.TestCase):
             self.assertIn("shared/goals.md", text, f"{skill} must follow the report rules")
 
 
+class JavaContractTest(unittest.TestCase):
+    def test_java_attribute_names_match_spec(self):
+        java = (ROOT / "instrumentation/java/src/main/java/io/github/photographed/authzradar/AuthzAttributes.java").read_text()
+        spec = (ROOT / "shared" / "attribute-spec.md").read_text()
+        names = re.findall(r'String [A-Z_]+ = "((?:authz|resource|client|api|auth)\.[a-z_]+)"', java)
+        self.assertGreaterEqual(len(names), 9)
+        for name in names:
+            self.assertIn(f"`{name}`", spec, f"Java uses {name}, which is not in attribute-spec.md")
+
+    def test_java_deny_reasons_match_spec(self):
+        java = (ROOT / "instrumentation/java/src/main/java/io/github/photographed/authzradar/AuthzAttributes.java").read_text()
+        spec = (ROOT / "shared" / "attribute-spec.md").read_text()
+        for reason in re.findall(r'REASON_[A-Z_]+ = "([a-z_]+)"', java):
+            self.assertIn(f"`{reason}`", spec, f"deny reason {reason} is not in attribute-spec.md")
+
+
 class StandardsMappingTest(unittest.TestCase):
     def setUp(self):
         import json

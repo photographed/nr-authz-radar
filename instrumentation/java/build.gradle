@@ -40,4 +40,8 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 17
     options.compilerArgs << '-parameters'
 }
-tasks.named('test') { useJUnitPlatform() }
+tasks.named('test') {
+    useJUnitPlatform()
+    include '**/*Test.class', '**/*IT.class'
+    testLogging { events 'failed'; exceptionFormat 'full' }
+}

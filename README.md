@@ -80,6 +80,22 @@ API 単位で認可を評価するには、**1つの API = 1つのトランザ�
 | `nr-appsec-guard` | 実行時: 前提の確認（段階とデータソース）、② 利用実態（U01〜U05）、③ 攻撃検知（D01〜D21。IDOR・SQLi・RCE の兆候・認証攻撃・AI エージェントらしい挙動）、④ 調査（I01〜I07）、計装の推奨（yml / XML / API）、アラート・Workflow Automation・Slack 通知の生成。Autopilot / iRCA の有無で動作を切り替え |
 | `api-authz-review` | ① 棚卸し（コード）: エンドポイントとスコープの洗い出し、IDOR/BOLA・BFLA・Mass Assignment・SQLi・OS コマンドインジェクション・デシリアライズ・過剰露出の検出、New Relic の実トラフィックで補正したランキング |
 
+## 計装ライブラリ（Java）
+
+S2（IDOR 成功の証拠）に最短で到達するための Spring Boot 用ライブラリを [`instrumentation/java/`](instrumentation/java/) に置いています。
+
+```java
+@CheckOwnership(type = "order")          // データ取得メソッドに付けるだけ
+public Order find(Long id) { ... }
+```
+
+- 既定は **S2 の最小セット**（`authz.decision`・`resource.owner_match`・仮名化した `enduser.id`）。設定で S3 の全属性
+- **OBSERVE モード**（記録だけ）で本当に起きている IDOR を見つけてから、ENFORCE モード（拒否）に切り替えられる
+- 必要スコープは `@PreAuthorize` / `@Secured` から自動で取得。エンドポイントごとの記述は不要
+- Spring Boot 3.5 / Spring Security 6.5 でテスト済み。4.x はコンパイルのみ確認。Maven Central には未公開
+
+使い方は [`skills/nr-appsec-guard/references/instrumentation-java.md`](skills/nr-appsec-guard/references/instrumentation-java.md)。
+
 ## 対応範囲（何をカバーし、何をカバーしないか）
 
 **このプラグインは、アプリケーション層の「認可・認証・インジェクション」と「それに気づくための監視」に絞っています。**
@@ -222,7 +238,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.2.0** Phase 2: Readiness 監査（R01〜R11）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
 - [x] **v0.3.0** 必要なデータソースの整理（R12、D19）、IAST との役割分担、RCE の一部（F9、F10、D20、D21）
 - [x] **v0.4.0** 4つの目的（棚卸し / 利用実態 / 攻撃検知 / 調査）と段階（S0〜S3）で再構成。利用実態 U01〜U05（D16・D19 を移動）、調査 I01〜I07、前提の確認 R13・R14。レポートを「今わかること」と「推奨」に分離
-- [ ] **v0.5.0** Java（Spring Security）の計装ライブラリ。S2 の2属性から使える形
+- [x] **v0.5.0** Java（Spring Boot / Spring Security）の計装ライブラリ。S2 の最小セットが既定、OBSERVE / ENFORCE モード、設定例（`newrelic.yml`・XML）
 - [ ] Phase 3（残り）: XML 候補の生成、APM エージェント対応の他言語
 - [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）

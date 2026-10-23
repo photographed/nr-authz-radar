@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Custom instrumentation for the New Relic Java agent (put it in the agent's extensions directory).
+
+  What this does: makes your authorization check methods visible as segments/spans, so you can see
+  which API transactions actually ran an ownership check (and which never did).
+
+  What it cannot do: compare values. resource.owner_match needs code (the authz-radar library).
+  Capturing method arguments as attributes (attributeName) is disabled by default and unavailable
+  in high-security mode; never capture IDs, user names or tokens this way.
+
+  Replace the class and method names with your own (api-authz-review lists candidates).
+-->
+<extension xmlns="https://newrelic.com/docs/java/xsd/v1.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="newrelic-extension extension.xsd"
+           name="authz-radar-checks" version="1.0">
+  <instrumentation metricPrefix="AuthzCheck">
+
+    <!-- Example: an ownership checker called from services -->
+    <pointcut transactionStartPoint="false">
+      <className>com.example.security.OwnershipChecker</className>
+      <method>
+        <name>check</name>
+      </method>
+    </pointcut>
+
+    <!-- Example: a Spring Security PermissionEvaluator (hasPermission(...)) -->
+    <pointcut transactionStartPoint="false">
+      <interfaceName>org.springframework.security.access.PermissionEvaluator</interfaceName>
+      <method>
+        <name>hasPermission</name>
+      </method>
+    </pointcut>
+
+  </instrumentation>
+</extension>

@@ -9,6 +9,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 /**
  * Records authorization telemetry for the current request.
  *
+ * <p>{@link AttributeSet#MINIMAL} (stage S2, the default) sends only {@code authz.decision},
+ * {@code resource.owner_match} and {@code enduser.id}. {@link AttributeSet#FULL} (stage S3)
+ * adds the rest of {@code shared/attribute-spec.md}.
+ *
  * <p>Rules that keep the data trustworthy:
  * <ul>
  *   <li>{@code deny} always wins over {@code allow}.</li>
@@ -20,15 +24,31 @@ public class AuthzTelemetry {
 
     private static final String STATE = AuthzTelemetry.class.getName() + ".state";
 
+    /** Which attributes to send. */
+    public enum AttributeSet { MINIMAL, FULL }
+
     private final TelemetryRecorder recorder;
     private final Pseudonymizer pseudonymizer;
+    private final boolean full;
 
-    public AuthzTelemetry(TelemetryRecorder recorder, Pseudonymizer pseudonymizer) {
+    public AuthzTelemetry(TelemetryRecorder recorder, Pseudonymizer pseudonymizer, AttributeSet attributeSet) {
         this.recorder = recorder;
         this.pseudonymizer = pseudonymizer;
+        this.full = attributeSet == AttributeSet.FULL;
     }
 
     public void requiredScope(String scope) {
+        state().requiredScope = scope;
+        if (full) {
+            recorder.attribute(AuthzAttributes.REQUIRED_SCOPE, scope);
+        }
+    }
+
+    /**
+     * Marks a legitimate cross-owner access (admin / support). Always sent, even with
+     * {@link AttributeSet#MINIMAL}: detection D01 needs it to exclude these accesses.
+     */
+    public void bypass(String scope) {
         state().requiredScope = scope;
         recorder.attribute(AuthzAttributes.REQUIRED_SCOPE, scope);
     }
@@ -38,7 +58,7 @@ public class AuthzTelemetry {
     }
 
     public void grantedScopes(Collection<String> scopes) {
-        if (scopes == null || scopes.isEmpty()) {
+        if (!full || scopes == null || scopes.isEmpty()) {
             return;
         }
         recorder.attribute(AuthzAttributes.GRANTED_SCOPES,
@@ -53,20 +73,20 @@ public class AuthzTelemetry {
     }
 
     public void apiKey(String rawApiKey) {
-        String id = pseudonymizer.apiKey(rawApiKey);
+        String id = full ? pseudonymizer.apiKey(rawApiKey) : null;
         if (id != null) {
             recorder.attribute(AuthzAttributes.API_KEY_ID, id);
         }
     }
 
     public void clientType(String clientType) {
-        if (clientType != null) {
+        if (full && clientType != null) {
             recorder.attribute(AuthzAttributes.CLIENT_TYPE, clientType);
         }
     }
 
     public void tokenAgeSeconds(long seconds) {
-        if (seconds >= 0) {
+        if (full && seconds >= 0) {
             recorder.attribute(AuthzAttributes.TOKEN_AGE_SEC, seconds);
         }
     }
@@ -88,7 +108,7 @@ public class AuthzTelemetry {
         boolean first = !AuthzAttributes.DENY.equals(s.decision);
         s.decision = AuthzAttributes.DENY;
         recorder.attribute(AuthzAttributes.DECISION, AuthzAttributes.DENY);
-        if (reason != null) {
+        if (full && reason != null) {
             recorder.attribute(AuthzAttributes.DENY_REASON, reason);
         }
         if (cause != null && first) {
@@ -103,7 +123,7 @@ public class AuthzTelemetry {
 
     public void ownership(String resourceType, boolean ownerMatches) {
         State s = state();
-        if (resourceType != null && !resourceType.isBlank()) {
+        if (full && resourceType != null && !resourceType.isBlank()) {
             recorder.attribute(AuthzAttributes.RESOURCE_TYPE, resourceType);
         }
         if (!ownerMatches) {

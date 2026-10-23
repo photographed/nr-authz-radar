@@ -1,0 +1,27 @@
+# Merge into the `common:` section of your newrelic.yml.
+# Setting keys can differ between agent versions: check the docs for your agent before applying.
+common: &default_settings
+
+  # Span events: needed for SQL statements, external calls and Browser/Mobile parents
+  # (D07, D08, D20, U03).
+  distributed_tracing:
+    enabled: true
+
+  # Never `raw`: raw SQL can contain personal data.
+  transaction_tracer:
+    record_sql: obfuscated
+
+  # Do not send credentials or client IPs (shared/privacy.md).
+  attributes:
+    exclude:
+      - request.headers.authorization
+      - request.headers.cookie
+      - request.headers.x-forwarded-for
+      - request.headers.x-real-ip
+      - request.parameters.*
+
+  # Stage S1 without code changes. Sends the RAW principal name as enduser.id:
+  # do not enable it if user names are e-mail addresses. Prefer the library (hmac-key).
+  # class_transformer:
+  #   com.newrelic.instrumentation.servlet-user:
+  #     enabled: true
