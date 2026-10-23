@@ -76,7 +76,16 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
   コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。
   - Java（Spring Boot / Spring Security）: `references/instrumentation-java.md`。計装ライブラリ（`instrumentation/java/`）で **S2 に最短で到達**できる。まず OBSERVE モードを推奨する。
   - 他の言語: 未整備。`shared/attribute-spec.md` の属性名を守って、各言語のエージェント API で実装するよう推奨する。
-- アラート条件・Alert Workflow・Workflow Automation・Slack 通知: テンプレートを **ファイルとして** 出力する（今後追加予定）。
+- アラート条件・Alert Workflow・Slack 通知: **前提の確認で判定した段階とデータソース**を使って、ファイルとして生成する（適用はユーザーが行う）。
+  ```bash
+  python3 <plugin-root>/scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out <出力先>
+  ```
+  - 生成されるのは、今の段階とデータソースで動くアラートだけ（定義は `shared/alerts.json`）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出るので、レポートの「推奨」に使う。
+  - Slack の Destination は New Relic の画面で作成する必要がある（OAuth のため）。その ID を変数で渡す。
+  - CRITICAL と HIGH（warning）でチャンネルを分ける。**Autopilot に渡すのは CRITICAL だけ**（上限対策）。
+- Workflow Automation: `templates/workflow-automation/security-triage.yaml`（**下書き・未検証**）。Autopilot / iRCA のオン・オフは入力値で切り替える。プロンプトの説明は `templates/autopilot/security-prompt.md`。
+- Knowledge: `templates/knowledge-runbooks/` を New Relic Knowledge に登録するよう推奨する（Autopilot が調査中に参照する。アラート条件の `runbook_url` からもリンクされる）。
+- Slack の通知形式: `templates/slack/security-alert.md`（「今わかること」と「推奨」を分ける）。
 
 ## レポートの書き方（必ず守る）
 

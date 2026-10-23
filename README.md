@@ -96,6 +96,23 @@ public Order find(Long id) { ... }
 
 使い方は [`skills/nr-appsec-guard/references/instrumentation-java.md`](skills/nr-appsec-guard/references/instrumentation-java.md)。
 
+## アラートと通知
+
+```bash
+python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/terraform
+```
+
+- **今の段階とデータソースで動くアラートだけを Terraform として生成**します（10種類。定義は [`shared/alerts.json`](shared/alerts.json)）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出ます。
+- CRITICAL と HIGH で Slack のチャンネルを分けます。CRITICAL は Workflow Automation で情報を集め、Autopilot（有効な場合。iRCA の結果も使う）に調査させてから通知します。
+- ランブックは New Relic Knowledge に登録して Autopilot が参照できる形です（[`templates/knowledge-runbooks/`](templates/knowledge-runbooks/)）。
+- 適用は利用者が行います（生成のみ）。
+
+| テンプレート | 状態 |
+|---|---|
+| Terraform（アラート条件・ポリシー・Workflow・Slack） | 構文チェック（`terraform fmt`）のみ。provider を使った `terraform validate` は未実施 |
+| Workflow Automation（`templates/workflow-automation/security-triage.yaml`） | **下書き・未検証**。一部のアクション名・入出力の書き方は公式テンプレートと照合が必要 |
+| Slack 通知の形式・Autopilot のプロンプト・ランブック | 完成 |
+
 ## 対応範囲（何をカバーし、何をカバーしないか）
 
 **このプラグインは、アプリケーション層の「認可・認証・インジェクション」と「それに気づくための監視」に絞っています。**
@@ -240,7 +257,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.4.0** 4つの目的（棚卸し / 利用実態 / 攻撃検知 / 調査）と段階（S0〜S3）で再構成。利用実態 U01〜U05（D16・D19 を移動）、調査 I01〜I07、前提の確認 R13・R14。レポートを「今わかること」と「推奨」に分離
 - [x] **v0.5.0** Java（Spring Boot / Spring Security）の計装ライブラリ。S2 の最小セットが既定、OBSERVE / ENFORCE モード、設定例（`newrelic.yml`・XML）
 - [ ] Phase 3（残り）: XML 候補の生成、APM エージェント対応の他言語
-- [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
+- [x] **v0.6.0** Phase 4: アラート条件の生成（段階とデータソースに合わせる）・Alert Workflow・Slack・Workflow Automation の下書き（Autopilot / iRCA 分岐）・Autopilot のプロンプト・Knowledge 用ランブック
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考

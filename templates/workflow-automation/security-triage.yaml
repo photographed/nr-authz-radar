@@ -1,0 +1,118 @@
+# nr-authz-radar: security triage for CRITICAL issues
+#
+# STATUS: DRAFT - NOT VALIDATED against a New Relic account.
+# The action names newrelic.autopilot.run and newrelic.notification.sendSlack come from the official
+# "Autopilot Slack RCA" template; newrelic.nrdb.query and the exact input/output field names and
+# expression syntax are unverified. Compare with that template in the New Relic UI before using.
+#
+# One definition for all four Autopilot / iRCA combinations (on/on, on/off, off/on, off/off):
+# switch the behaviour with the inputs below instead of keeping four templates.
+#
+# Trigger: an Alert Workflow (templates/terraform/workflows.tf, CRITICAL only) that passes {{ issueId }}.
+# Only CRITICAL issues come here, to stay within Autopilot's rate limit.
+
+name: authz-radar-security-triage
+description: Enrich a CRITICAL authz-radar issue, optionally ask Autopilot (with iRCA), and post to Slack.
+
+workflowInputs:
+  issueId:
+    type: String
+  accountId:
+    type: Int
+  appName:
+    type: String
+  slackDestinationId:
+    type: String
+  slackChannel:
+    type: String
+  autopilotEnabled:
+    type: Boolean
+    defaultValue: false
+  ircaEnabled:
+    type: Boolean
+    defaultValue: false
+  runbookBaseUrl:
+    type: String
+    defaultValue: https://github.com/photographed/nr-authz-radar/blob/main/templates/knowledge-runbooks
+
+steps:
+  - name: acknowledge
+    type: action
+    action: newrelic.notification.sendSlack
+    version: 1
+    inputs:
+      destinationId: ${{ .workflowInputs.slackDestinationId }}
+      channel: ${{ .workflowInputs.slackChannel }}
+      text: ":rotating_light: [authz-radar] CRITICAL issue ${{ .workflowInputs.issueId }} を受信。情報を集めています。"
+
+  # Facts only: who / which API / what status in the last 30 minutes, and recent deployments.
+  - name: enrichTraffic
+    type: action
+    action: newrelic.nrdb.query
+    version: 1
+    inputs:
+      accountIds: ["${{ .workflowInputs.accountId }}"]
+      query: >-
+        SELECT count(*) FROM Transaction
+        WHERE appName = '${{ .workflowInputs.appName }}' AND http.statusCode >= 400
+        FACET name, http.statusCode SINCE 30 minutes ago LIMIT 10
+
+  - name: enrichDeployments
+    type: action
+    action: newrelic.nrdb.query
+    version: 1
+    inputs:
+      accountIds: ["${{ .workflowInputs.accountId }}"]
+      query: >-
+        SELECT timestamp, version, user FROM Deployment
+        WHERE entity.name = '${{ .workflowInputs.appName }}' SINCE 2 hours ago LIMIT 5
+
+  - name: useAutopilot
+    type: switch
+    switch:
+      - condition: ${{ .workflowInputs.autopilotEnabled }}
+        next: askAutopilot
+    next: notify
+
+  # Prompt: templates/autopilot/security-prompt.md (keep both in sync).
+  - name: askAutopilot
+    type: action
+    action: newrelic.autopilot.run
+    version: 1
+    inputs:
+      issueId: ${{ .workflowInputs.issueId }}
+      prompt: >-
+        You are triaging a CRITICAL security alert from nr-authz-radar. Follow these rules.
+        1) Write two sections: "今のデータでわかること" (facts you verified, with the queries you ran) and
+        "推奨" (next actions; anything that blocks users, revokes tokens or changes WAF rules needs human approval).
+        2) Decide whether this is more likely an external attack or a change of ours.
+        ${{ if .workflowInputs.ircaEnabled }}Use the intelligent root cause analysis result: a probable cause inside
+        our topology (deployment, resource limit) suggests our own change; no internal cause suggests external input.
+        ${{ else }}Compare the start time with deployments in the last 2 hours.${{ end }}
+        If authorization attributes changed right after a deployment, suspect a removed authorization check.
+        3) Never state that an AI agent is attacking; report "automation-like behaviour" with the evidence.
+        4) Do not include raw user IDs, IP addresses or e-mail addresses; use counts and pseudonymous IDs.
+        5) Say "unknown" when data is missing (sampling, retention, missing attributes) and what would fill the gap.
+        6) Link the runbook for the detection ID in the issue title under ${{ .workflowInputs.runbookBaseUrl }}.
+    next: notify
+
+  - name: notify
+    type: action
+    action: newrelic.notification.sendSlack
+    version: 1
+    inputs:
+      destinationId: ${{ .workflowInputs.slackDestinationId }}
+      channel: ${{ .workflowInputs.slackChannel }}
+      # Layout: templates/slack/security-alert.md
+      text: >-
+        *[authz-radar] CRITICAL* issue ${{ .workflowInputs.issueId }} / ${{ .workflowInputs.appName }}
+
+        *今のデータでわかること*
+        • 直近30分のエラー応答（上位）: ${{ .steps.enrichTraffic.outputs.results }}
+        • 直近2時間のデプロイ: ${{ .steps.enrichDeployments.outputs.results }}
+        • Autopilot: ${{ if .workflowInputs.autopilotEnabled }}${{ .steps.askAutopilot.outputs.result }}${{ else }}無効（ランブックに沿って確認してください）${{ end }}
+
+        *推奨*
+        • ランブック: ${{ .workflowInputs.runbookBaseUrl }}
+        • ブロック・トークン失効・WAF 変更は承認のうえで実施
+        • 影響範囲の確認は nr-authz-radar の ④ 調査（I01〜I07）で

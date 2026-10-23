@@ -1,0 +1,88 @@
+{
+  "notes": [
+    "検知カタログ（detections.nrql.md）のうち、アラートにできるものだけを定義する。",
+    "アラートの NRQL には SINCE / UNTIL / LIMIT / COMPARE WITH を書かない（New Relic のアラート条件では使えない、または無視される）。",
+    "{appName} はアプリ名、{bypassScopePattern} は正当な他人アクセスの印（既定 admin:%）に置き換える。",
+    "しきい値は初期値。Phase 5 の実データで調整する。"
+  ],
+  "alerts": [
+    {
+      "id": "D01", "name": "IDOR 成功の証拠", "stage": "S2", "requires": [], "runbook": "idor.md",
+      "type": "static", "window_seconds": 300,
+      "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND resource.owner_match IS FALSE AND authz.decision = 'allow' AND (authz.required_scope IS NULL OR authz.required_scope NOT LIKE '{bypassScopePattern}') FACET name",
+      "critical": {"operator": "above", "threshold": 0}
+    },
+    {
+      "id": "D02", "name": "他人のリソースへのアクセス試行", "stage": "S2", "requires": [], "runbook": "idor.md",
+      "type": "static", "window_seconds": 600,
+      "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND resource.owner_match IS FALSE AND authz.decision = 'deny' FACET enduser.id",
+      "critical": {"operator": "above", "threshold": 20},
+      "warning": {"operator": "above", "threshold": 5}
+    },
+    {
+      "id": "D03", "name": "ID 列挙", "stage": "S1", "requires": [], "runbook": "idor.md",
+      "type": "static", "window_seconds": 900,
+      "nrql": "SELECT uniqueCount(request.uri) FROM Transaction WHERE appName = '{appName}' AND name LIKE '%{%}%' FACET enduser.id",
+      "critical": {"operator": "above", "threshold": 50},
+      "warning": {"operator": "above", "threshold": 15}
+    },
+    {
+      "id": "D04", "name": "403 / 404 比率の急上昇", "stage": "S0", "requires": [], "runbook": "recon.md",
+      "type": "baseline", "window_seconds": 300,
+      "nrql": "SELECT percentage(count(*), WHERE http.statusCode IN (403, 404)) FROM Transaction WHERE appName = '{appName}' AND transactionType = 'Web'",
+      "critical": {"operator": "above", "threshold": 4},
+      "warning": {"operator": "above", "threshold": 3}
+    },
+    {
+      "id": "D06", "name": "DB 構文エラー", "stage": "S0", "requires": [], "runbook": "sqli.md",
+      "type": "static", "window_seconds": 300,
+      "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.sql.SQLSyntaxErrorException', 'org.springframework.jdbc.BadSqlGrammarException', 'org.hibernate.exception.SQLGrammarException') OR error.message LIKE '%syntax error%' OR error.message LIKE '%You have an error in your SQL syntax%' OR error.message LIKE '%unterminated quoted string%') FACET transactionName",
+      "critical": {"operator": "above", "threshold": 9},
+      "warning": {"operator": "above", "threshold": 0}
+    },
+    {
+      "id": "D07", "name": "注入らしい SQL 文", "stage": "S0", "requires": ["spans"], "runbook": "sqli.md",
+      "type": "static", "window_seconds": 300,
+      "nrql": "SELECT count(*) FROM Span WHERE entity.name = '{appName}' AND db.statement RLIKE '(?i).*(pg_sleep|waitfor delay|benchmark|information_schema|union select|union all select).*' FACET name",
+      "critical": {"operator": "above", "threshold": 0}
+    },
+    {
+      "id": "D10", "name": "認証失敗の急増", "stage": "S0", "requires": [], "runbook": "auth.md",
+      "type": "baseline", "window_seconds": 300,
+      "nrql": "SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND http.statusCode = 401",
+      "critical": {"operator": "above", "threshold": 4},
+      "warning": {"operator": "above", "threshold": 3}
+    },
+    {
+      "id": "D11", "name": "少数アカウント × 多数のネットワーク", "stage": "S3", "requires": [], "runbook": "auth.md",
+      "type": "static", "window_seconds": 3600,
+      "nrql": "SELECT uniqueCount(client.asn) FROM Transaction WHERE appName = '{appName}' FACET enduser.id",
+      "critical": {"operator": "above", "threshold": 9},
+      "warning": {"operator": "above", "threshold": 4}
+    },
+    {
+      "id": "D12", "name": "ブラウザを経由しない API 直叩き", "stage": "S0", "requires": ["browser_dt"], "runbook": "automation.md",
+      "type": "baseline", "window_seconds": 600,
+      "nrql": "SELECT percentage(count(*), WHERE parent.type IS NULL) FROM Transaction WHERE appName = '{appName}' AND transactionType = 'Web'",
+      "warning": {"operator": "above", "threshold": 3}
+    },
+    {
+      "id": "D21", "name": "RCE の試みで出る例外", "stage": "S0", "requires": [], "runbook": "rce.md",
+      "type": "static", "window_seconds": 300,
+      "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.io.InvalidClassException', 'java.io.StreamCorruptedException', 'com.fasterxml.jackson.databind.exc.InvalidTypeIdException', 'org.springframework.expression.spel.SpelEvaluationException', 'ognl.OgnlException', 'javax.naming.NamingException') OR error.message LIKE '%Cannot run program%' OR error.message LIKE '%jndi:%') FACET transactionName",
+      "critical": {"operator": "above", "threshold": 4},
+      "warning": {"operator": "above", "threshold": 0}
+    }
+  ],
+  "hunt_only": {
+    "D05": "S3 の属性が必要で、しきい値が組織ごとに大きく異なるため Hunt で確認する",
+    "D08": "平常時との比較（COMPARE WITH）が必要で、アラート条件にできない",
+    "D09": "分布の形（二山）を見る判定で、単純なしきい値にできない",
+    "D13": "入れ子のクエリを使うため、アラート条件にできない可能性が高い",
+    "D14": "平常時との比較が必要",
+    "D15": "攻撃の兆候ではなく設定のリスク（定期レポート向け）",
+    "D17": "「初めて出現した」の判定（earliest）が必要",
+    "D18": "相関のための参照クエリ",
+    "D20": "「初めて出現した宛先」の判定（earliest）が必要。D21 の発火時に Hunt で確認する"
+  }
+}
