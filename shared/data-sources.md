@@ -1,5 +1,7 @@
 # New Relic に必要なデータと、それでできること
 
+> 目的（①棚卸し・②利用実態・③攻撃検知・④調査）と段階（S0〜S3）の考え方は `shared/goals.md`。ここはデータソースの詳細。
+
 このプラグインは **「何のデータが入っているか」で見える範囲が決まる**。
 まず APM と分散トレーシングで API の実態をつかみ、そこから Browser・Logs・Infrastructure へと見る範囲を広げていく。
 
@@ -7,12 +9,12 @@ Readiness 監査（`skills/nr-appsec-guard/references/readiness-checks.md`）は
 
 ## 1. データソースと、それで見えるもの
 
-| 段階 | データソース | 主なイベント | これで見えるもの | 使う検知 |
+| 優先度 | データソース | 主なイベント | これで見えるもの | 使う検知・クエリ |
 |---|---|---|---|---|
-| **必須** | **APM エージェント** | `Transaction`、`TransactionError` | API ごとのアクセス・ステータスコード・ユーザー・例外。**トランザクション名 = API エンドポイント**（§2） | D03、D04、D06、D09、D10、D16、D17 |
+| **必須** | **APM エージェント** | `Transaction`、`TransactionError` | API ごとのアクセス・ステータスコード・ユーザー・例外。**トランザクション名 = API エンドポイント**（§2） | D03、D04、D06、D09、D10、D17、U01、U05 |
 | **必須** | **分散トレーシング（APM で有効化）** | `Span` | API の中で実行された SQL 文・外部呼び出し。Browser / Mobile から API までのつながり（`parent.type`） | D07、D08、D12、D20 |
-| **必須** | **認可属性（コード計装）** | `Transaction` の custom attribute | 誰が・どのスコープで・誰のデータに触れたか。**IDOR 成功を見る唯一の手段** | D01、D02、D05、D11、D13〜D15 |
-| 推奨 | **Browser エージェント** | `PageView`、`AjaxRequest`、`BrowserInteraction` | 画面から実際に呼ばれている API（Ajax）の一覧。**正規の画面を通った呼び出しか**の判定 | D12、D19 |
+| 推奨（S2〜S3） | **認可属性（コード計装）** | `Transaction` の custom attribute | 誰が・どのスコープで・誰のデータに触れたか。**IDOR 成功を見る唯一の手段** | D01、D02、D05、D11、D13〜D15 |
+| 推奨 | **Browser エージェント** | `PageView`、`AjaxRequest`、`BrowserInteraction` | 画面から実際に呼ばれている API（Ajax）の一覧。**正規の画面を通った呼び出しか**の判定 | D12、U02 |
 | 推奨 | **Logs in context（アプリのログ）** | `Log`（`trace.id`・`span.id` 付き） | トランザクションと結び付いたアプリのログ。認可判断をログに出している場合の代替 | 属性が送れない場合の代替 |
 | 推奨 | **Change Tracking（デプロイ記録）** | `Deployment` ※要確認 | 異常の直前の変更。「攻撃か、自分たちの変更か」の切り分け。iRCA の精度にも影響 | D18 |
 | 任意 | **ミドルウェアのログ**（nginx・Apache・Tomcat のアクセスログ） | `Log` | クエリ文字列を含むリクエスト内容。**APM の `request.uri` にはクエリ文字列が入らない**ため、それを補う | D11 の代替 |
@@ -25,7 +27,7 @@ Readiness 監査（`skills/nr-appsec-guard/references/readiness-checks.md`）は
 
 **IAST の注意**: 公式に「本番環境では使わないこと（pre-production のみ）」とされている。
 
-**判断の目安**: 「必須」の3つが揃っていない状態で検知を増やしても効果は小さい。Readiness 監査はまずここの不足を指摘する。
+**判断の目安**: 「必須」の2つ（APM と分散トレーシング）が揃っていない状態で検知を増やしても効果は小さい。前提の確認はまずここの不足を指摘する。認可属性は段階的に（まず S2 の2属性）入れる。
 
 ## 2. トランザクション名 = API エンドポイント
 
@@ -45,8 +47,8 @@ API 単位で認可を評価するには、**1つの API が1つのトランザ�
 | 視点 | データ | わかること |
 |---|---|---|
 | コード | `api-authz-review` のエンドポイント一覧 | 実装されている API と、そのスコープ・所有者照合 |
-| サーバー | APM の `Transaction`（D16） | 実際に呼ばれている API と、その量 |
-| 画面 | Browser の `AjaxRequest`（D19） | 正規の画面が呼んでいる API |
+| サーバー | APM の `Transaction`（U01） | 実際に呼ばれている API と、その量 |
+| 画面 | Browser の `AjaxRequest`（U02） | 正規の画面が呼んでいる API |
 
 この3つのズレが手がかりになる。
 

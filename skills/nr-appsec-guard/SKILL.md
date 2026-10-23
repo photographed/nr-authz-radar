@@ -8,6 +8,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 SIEM でログを相関するのではなく、アプリ内部の文脈（認可判断・トランザクション・DB・Browser）で攻撃に気づく。
 
 プラグインのルートはこのファイルから `../../`。共通仕様:
+- `shared/goals.md` — **4つの目的・段階（S0〜S3）・レポートの書き方**（最初に読む）
 - `shared/data-sources.md` — 必要なデータソース、トランザクション名の品質、API 設計の突き合わせ
 - `shared/attribute-spec.md` — 検知の前提となる属性
 - `shared/owasp-mapping.md` — 脅威とシグナルの対応
@@ -31,37 +32,55 @@ SIEM でログを相関するのではなく、アプリ内部の文脈（認可
 接続できているサーバーを確認し、ユーザーの指定またはアカウントのリージョンに応じて使い分ける。`newrelic-jp` が無いのに JP のアカウントを指定された場合は、追加方法を案内する。
 認証は OAuth が標準（一部ツールは OAuth 専用）。API Key で接続している場合は、使えないツールがあることを最初に伝える。
 
-## モード
+## 目的とモード
 
-ユーザーの依頼から判定する。曖昧な場合は ① から始める。
+扱う問題は4つの別々の目的に分かれる（`shared/goals.md`）。ユーザーの依頼がどの目的かを最初に判定し、**混ぜない**。
 
-### ① Readiness 監査（何が検知できる状態か）
-`references/readiness-checks.md` の R01〜R12 を順に実行する（R11 はプライバシー監査、R12 はトランザクション名の品質）。主な確認項目:
+| 目的 | 使うもの |
+|---|---|
+| ① 棚卸し | `api-authz-review` Skill（コード）＋ `references/usage.nrql.md` の U01・U02 |
+| ② 利用実態 | `references/usage.nrql.md`（U01〜U05） |
+| ③ 攻撃検知 | `references/detections.nrql.md`（D01〜D21） |
+| ④ 調査 | `references/investigation.nrql.md`（I01〜I07） |
+
+どの目的でも、最初に **前提の確認**（Readiness）を行う。依頼が曖昧なら Readiness から始める。
+
+### 前提の確認（Readiness）
+`references/readiness-checks.md` の R01〜R14 を順に実行し、**現在の段階（S0〜S3）とデータソース**を判定する。
 - 認可属性が届いているか、全エンドポイントに付いているか（計装漏れ）
 - High-security mode の有無（推定 + ユーザーに確認）
 - Browser / Mobile との分散トレーシング、Span の SQL 文、デプロイ記録
-- Errors Inbox / Performance Risks Inbox を MCP で扱えるか
-- **Autopilot / iRCA のオン・オフ**（下表の動作を切り替える）
+- トランザクション名の品質（R12）、プライバシー（R11）
+- サンプリングと保存期間（R13・R14。④ 調査の前提）
+- Errors Inbox / Performance Risks Inbox を MCP で扱えるか、**Autopilot / iRCA のオン・オフ**
 
-結果は同ファイルの「出力形式」に従い、「検知できる脅威 / できない脅威」と改善項目（効果の大きい順）で出す。
+### ② 利用実態
+`references/usage.nrql.md` を実行する。攻撃かどうかは判定しない。結果は ① 棚卸しの突き合わせと、優先度の `traffic_rpm` に使う。
 
-### ② Hunt（今起きていることを調べる）
-`references/detections.nrql.md` の D01〜D21 のうち、Readiness 監査で前提を満たしたものだけを実行する。
-- 実行順: D01（IDOR 成功）→ A 認可 → B SQLi → E RCE → C 認証・AI エージェント → D インベントリ・変更相関
-- **D20 と D21 が同じ時間帯に出たら、D01 と同じく最優先で報告する**（RCE の可能性が高い）。
-- **D01 で1件でも見つかったら、他の検知より先にユーザーへ報告する。**
+### ③ 攻撃検知（Hunt）
+`references/detections.nrql.md` のうち、**現在の段階とデータソースで実行できるものだけ**を実行する。
+- 実行順: D01（IDOR 成功）→ A 認可 → B SQLi → E RCE → C 認証・AI エージェント → D 例外・変更相関
+- **D01 で1件でも見つかったら、他の検知より先にユーザーへ報告する。D20 と D21 が同じ時間帯に出たときも同様**（RCE の可能性が高い）。
 - 「要検証」のクエリがエラーになったら、簡略化して再試行し、その旨を報告する。
 - 結果は脅威ごとに `strong` / `weak` / `none` / 判定不能（理由）で報告する。
-- 兆候がある場合は D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分ける。
+- 兆候がある場合は D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分ける。兆候の対象を深掘りするなら ④ 調査に進む。
 - `api-authz-review` と連携する場合は、同ファイル末尾のルールでエンドポイント別の `attack_signal` を作る。
 
-### ③ Harden（計装の推奨）
-`shared/attribute-spec.md` の3段階（yml → XML → API）で、最も手軽に済む手段を推奨する。
-コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。
-（Phase 3 で `references/instrumentation-java.md` を整備。以降、APM エージェント対応の各言語を追加）
+### ④ 調査
+`references/investigation.nrql.md` の手順に従う。**最初に I05〜I07 で記録が残っているかを確かめ**、APM は手がかり、ログで確定させる。
+「取得された可能性がある」と「取得された（ログで確認済み）」を区別して書く。
 
-### ④ 生成（アラート・Workflow・Slack）
-アラート条件、Alert Workflow、Workflow Automation、Slack 通知のテンプレートを **ファイルとして** 出力する（Phase 4 で `templates/` に整備）。
+### 推奨の作成（計装・アラート）
+- 計装: `shared/attribute-spec.md` の **計装の手段**（yml → XML → API）から、最も手軽に済むものを推奨する。次の段階（S1〜S3）に進むために必要な作業として示す。
+  コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。（Java の実装例は v0.5.0 で追加予定）
+- アラート条件・Alert Workflow・Workflow Automation・Slack 通知: テンプレートを **ファイルとして** 出力する（今後追加予定）。
+
+## レポートの書き方（必ず守る）
+
+`shared/goals.md` の「レポートの書き方」に従い、**「今のデータでわかること・できること」と「推奨（段階的に）」を別の節に分ける。**
+- 前者には、現在の段階・データソース・実行した確認の結果だけを書く。できなかったものは「判定不能（理由）」と書く。
+- 後者の各項目には、**それをやると何がわかるようになるか**と**どの目的に効くか**を書く。
+- 推測で「今わかること」を埋めない。
 
 ## Autopilot / iRCA のオン・オフによる動作
 

@@ -9,7 +9,7 @@ REFS = ROOT / "skills" / "nr-appsec-guard" / "references"
 class DocsConsistencyTest(unittest.TestCase):
     def test_referenced_detections_exist(self):
         defined = set(re.findall(r"^### (D\d{2}) ", (REFS / "detections.nrql.md").read_text(), re.M))
-        self.assertEqual(len(defined), 21)
+        self.assertEqual(len(defined), 19)
         for path in [REFS / "readiness-checks.md", REFS / "detections.nrql.md"]:
             for ref in set(re.findall(r"\bD\d{2}\b", path.read_text())):
                 self.assertIn(ref, defined, f"{path.name} references undefined {ref}")
@@ -19,6 +19,43 @@ class DocsConsistencyTest(unittest.TestCase):
         queries = (REFS / "detections.nrql.md").read_text()
         for attr in set(re.findall(r"\b((?:authz|resource|client|api|auth|edge)\.[a-z_]+)\b", queries)):
             self.assertIn(f"`{attr}`", spec, f"{attr} used in NRQL but not in attribute-spec.md")
+
+
+def _defined(prefix, filename):
+    return set(re.findall(rf"^### ({prefix}\d{{2}}) ", (REFS / filename).read_text(), re.M))
+
+
+class GoalStructureTest(unittest.TestCase):
+    FILES = {"D": "detections.nrql.md", "U": "usage.nrql.md", "I": "investigation.nrql.md", "R": "readiness-checks.md"}
+
+    def test_every_reference_is_defined(self):
+        defined = {p: _defined(p, f) for p, f in self.FILES.items()}
+        docs = list((ROOT / "shared").glob("*.md")) + list((ROOT / "skills").rglob("*.md")) + [ROOT / "README.md"]
+        for path in docs:
+            text = path.read_text()
+            for prefix in self.FILES:
+                for ref in set(re.findall(rf"\b({prefix}\d{{2}})\b", text)):
+                    if path.name == "README.md" and ref in ("D16", "D19"):
+                        continue  # roadmap history mentions the old IDs
+                    self.assertIn(ref, defined[prefix], f"{path.relative_to(ROOT)} references undefined {ref}")
+
+    def test_detections_and_usage_declare_stage(self):
+        for filename in ("detections.nrql.md", "usage.nrql.md"):
+            for line in (REFS / filename).read_text().splitlines():
+                if re.match(r"^### [DU]\d{2} ", line):
+                    self.assertRegex(line, r"段階 S[0-3]", f"{filename}: {line}")
+
+    def test_usage_and_investigation_counts(self):
+        self.assertEqual(len(_defined("U", "usage.nrql.md")), 5)
+        self.assertEqual(len(_defined("I", "investigation.nrql.md")), 7)
+
+    def test_reports_separate_now_from_recommendations(self):
+        goals = (ROOT / "shared" / "goals.md").read_text()
+        self.assertIn("## 今のデータでわかること・できること", goals)
+        self.assertIn("## 推奨（段階的に）", goals)
+        for skill in ("nr-appsec-guard", "api-authz-review"):
+            text = (ROOT / "skills" / skill / "SKILL.md").read_text()
+            self.assertIn("shared/goals.md", text, f"{skill} must follow the report rules")
 
 
 class StandardsMappingTest(unittest.TestCase):
@@ -39,11 +76,14 @@ class StandardsMappingTest(unittest.TestCase):
     def test_label_formats(self):
         pats = {"cwe": r"CWE-\d+", "asvs": r"V\d{1,2}", "owasp_top10": r"A\d{2}",
                 "owasp_api": r"API\d{1,2}", "oat": r"OAT-\d{3}", "ipa": r"\d+\.\d+"}
-        for group in ("findings", "detections"):
+        for group in ("findings", "detections", "usage"):
             for key, entry in self.std[group].items():
                 for field, pat in pats.items():
                     for v in entry[field]:
                         self.assertRegex(v, f"^{pat}$", f"{group}.{key}.{field}={v}")
+
+    def test_usage_mapping_ids_exist(self):
+        self.assertLessEqual(set(self.std["usage"]), _defined("U", "usage.nrql.md"))
 
     def test_readme_lists_finding_cwes(self):
         readme = (ROOT / "README.md").read_text()
