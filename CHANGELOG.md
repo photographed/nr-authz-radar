@@ -7,6 +7,23 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-23
+
+### Added
+- **証拠の強さ**（証拠 / 強い兆候 / 異常 / リスク / 参考）を全検知に付与。`shared/detections.json` に、名前（日英）・段階・必要なデータソースとあわせて1か所で管理。検知の見出しにも表示
+- `scripts/hunt.py`: 検知のカタログを NerdGraph で直接実行し（AI を使わない）、証拠の強さごとの短い要約を出す。段階・データソースで実行できない検知は理由付きで飛ばす。個人やリソースを示す値は要約で伏せ字にする。`--levels evidence,strong` で軽量な日次実行
+- `scripts/catalog.py`: 検知・利用実態・調査・前提の確認の一覧（1行1件）と、必要な ID の節だけを表示
+- `scripts/inventory_java.py`: Java のエンドポイント（REST・GraphQL・STOMP・SOAP）と怪しい箇所の候補を一覧にする。`--changed-since` で PR の変更分だけ
+- `shared/cost.md`: New Relic 側のコスト（クエリ数の実測、使い分け、確認すべき料金の項目）と、Claude 側のトークン削減の仕組み
+- `--include-anomaly`（`gen_alerts.py`）、Terraform の `learning_mode` 変数
+
+### Changed
+- **アラートの振り分けを証拠の強さに基づいて変更**: CRITICAL（通知・Autopilot）は「証拠」だけ、「強い兆候」は HIGH、「異常」は既定で生成しない。既定のアラートは S3 でも6本（以前は12本）
+- レポートは証拠の強さごとに分け、異常だけで攻撃と書かない（`shared/goals.md`）
+- 両 Skill の SKILL.md を短い入口にした（24.5KB → 9.4KB）。詳細は `skills/api-authz-review/references/review-rules.md`・`skills/nr-appsec-guard/references/recommendations.md` へ移動
+- D20 のクエリの `LIMIT MAX` を `LIMIT 200` に変更（カタログで最も重いクエリのため）
+
+
 ## [0.9.0] - 2026-10-23
 
 ### Added

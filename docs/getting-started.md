@@ -27,7 +27,7 @@ Claude Code ── Skill（手順書）を読む
 |---|---|---|
 | `skills/` | Claude への手順書。`api-authz-review`（コード監査）と `nr-appsec-guard`（New Relic での確認・検知・調査・計装の推奨・アラート生成） | Claude |
 | `shared/` | 共通の仕様（属性、目的と段階、データソース、方式、優先度、プライバシー、規格の対応表） | Claude と人 |
-| `scripts/` | 決まった計算・生成をするスクリプト。`risk_score.py`（順位）、`gen_alerts.py`（アラート）、`gen_xml_candidates.py`（XML 計装の候補） | **Claude が実行**（人が直接実行してもよい） |
+| `scripts/` | 決まった計算・生成をするスクリプト。`risk_score.py`（順位）、`gen_alerts.py`（アラート）、`hunt.py`（NerdGraph で検知を実行。AI を使わない）、`inventory_java.py`（エンドポイントの一覧）、`catalog.py`（必要な節だけを表示）、`gen_xml_candidates.py`（XML 計装の候補） | **Claude が実行**（人が直接実行してもよい） |
 | `templates/` | New Relic に適用する設定の雛形（Terraform、Workflow Automation、Slack、Autopilot のプロンプト、ランブック） | Claude が埋めて出力 → **人が適用** |
 | `instrumentation/` | **あなたのアプリに組み込むコード**。Java は計装ライブラリ、Python・Node.js・Ruby・Go・PHP・.NET は取り込める小さなファイル | **開発者**（Claude は実行しない。組み込むパッチ案を作る） |
 | `examples/`・`docs/samples/` | サンプルのアプリと、実際の実行結果・レポート例 | 人 |
@@ -128,6 +128,14 @@ python3 scripts/gen_alerts.py --stage S0 --sources spans --out out/terraform
 python3 scripts/gen_xml_candidates.py path/to/src/main/java --xml out/authz-extension.xml --report out/xml-candidates.md
 ```
 
+### 定期実行（AI を使わない Hunt）
+```bash
+export NEW_RELIC_API_KEY=...   # User キー
+python3 scripts/hunt.py --app shop-api --account-id 1234567 --stage S2 --sources spans --levels evidence,strong
+# 結果: .authz-radar/hunt/hunt-summary.md（証拠の強さごとの要約）
+```
+cron や CI から実行できる。要約を Claude に読ませて解釈させてもよい（読む量が少ないので安い）。
+
 ## 6. よくある質問
 
 | 質問 | 答え |
@@ -138,4 +146,6 @@ python3 scripts/gen_xml_candidates.py path/to/src/main/java --xml out/authz-exte
 | カスタム属性が無いと何もできない？ | できることは多い（S0 でも API の棚卸し・利用実態・SQLi や RCE の兆候など）。**IDOR が成功した証拠だけは S2 の2属性が必要** |
 | REST 以外（GraphQL・WebSocket など）は？ | 対応している。ただしステータスコードを使う検知は REST 専用。詳細: [`shared/protocols.md`](../shared/protocols.md) |
 | 英語で使える？ | 使える。英語で頼めば英語で出力する。スクリプトのレポートは `--lang en` |
+| 偽陽性が多くならない？ | 証拠の強さで分けている。通知するのは「証拠」（D01・D07）と「強い兆候」だけで、量や割合の「異常」は既定では通知しない。詳細: [`docs/how-it-works.md`](how-it-works.md) |
+| コストは？ | 定期の Hunt は AI を使わない `hunt.py`。Autopilot は証拠のアラートからだけ。詳細: [`shared/cost.md`](../shared/cost.md) |
 | 現在の検証状況は？ | スクリプト・計装コードはテスト済み。**NRQL・Terraform・Workflow Automation は実際の New Relic 環境では未検証**（Phase 5 で検証予定） |

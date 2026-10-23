@@ -1,121 +1,52 @@
 ---
 name: nr-appsec-guard
-description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credential stuffing, AI-agent-like scraping) from New Relic APM, Logs, Browser, Errors Inbox and Performance Risks Inbox via the New Relic Ground Truth MCP, audit telemetry readiness, recommend custom attributes / agent XML, and generate alert conditions, Workflow Automation (with or without Autopilot / iRCA) and Slack notifications. Use when asked to check New Relic for attacks, assess security observability readiness, or set up security alerts in New Relic.
+description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credential stuffing, AI-agent-like scraping) from New Relic APM, Logs, Browser, Errors Inbox and Performance Risks Inbox via the New Relic Ground Truth MCP or NerdGraph, audit telemetry readiness, recommend custom attributes / agent XML, and generate alert conditions, Workflow Automation (with or without Autopilot / iRCA) and Slack notifications. Use when asked to check New Relic for attacks, assess security observability readiness, or set up security alerts in New Relic.
 ---
 
 # nr-appsec-guard — New Relic で認可攻撃に気づく
 
-SIEM でログを相関するのではなく、アプリ内部の文脈（認可判断・トランザクション・DB・Browser）で攻撃に気づく。
-
-プラグインのルートはこのファイルから `../../`。共通仕様:
-- `references/instrumentation-java.md` — Java の計装（S2 への最短経路）
-- `references/instrumentation-other-languages.md` — Python・Node.js・Ruby・Go・PHP・.NET の計装（S2）
-- `shared/goals.md` — **4つの目的・段階（S0〜S3）・レポートの書き方**（最初に読む）
-- `shared/protocols.md` — **API の方式（REST 以外）ごとの盲点と対策**
-- `shared/data-sources.md` — 必要なデータソース、トランザクション名の品質、API 設計の突き合わせ
-- `shared/attribute-spec.md` — 検知の前提となる属性
-- `shared/owasp-mapping.md` — 脅威とシグナルの対応
-- `shared/threat-model-2026-jp.md` — 日本国内の最新の手口
-- `shared/risk-scoring.md` — 優先度の計算
-- `shared/privacy.md` — データ最小化・IP の扱い
-- `shared/standards.json` — 検知ごとの CWE・ASVS・OWASP・OAT・IPA
-
-## 出力の言語
-
-**ユーザーが使っている言語で出力する**（日本語なら日本語、英語なら英語）。参照する仕様書は日本語だが、それに引きずられない。
-属性名・検知の ID（D01 など）・CWE などの番号・コードは訳さない。スクリプトのレポートは `--lang en` で英語にできる（`gen_alerts.py`・`gen_xml_candidates.py`）。
+アプリ内部の文脈（認可判断・トランザクション・DB・Browser）で攻撃に気づく。プラグインのルートはこのファイルから `../../`（以下 `<root>`）。
 
 ## 守ること
+1. **ユーザーの言語で出力する**（英語なら英語）。ID・属性名・番号・コードは訳さない
+2. **New Relic へは読み取りのみ。** アラート・Workflow・アプリの設定やコードは **ファイルとして生成するだけ**
+3. **個人データを出さない・広げない**: レポートには件数・仮名・上位の要約だけ。IP は既定で送らない設計を勧める（`shared/privacy.md`）
+4. **証拠の強さで書き分ける**: 証拠 / 強い兆候 / 異常（`shared/detections.json`）。**異常だけで攻撃と書かない。** 「AI エージェントによる攻撃」と断定しない
+5. **「今わかること」と「推奨」を別の節に分ける**（`shared/goals.md`）。推奨には「何がわかるようになるか」と「どの目的に効くか」を書く
+6. 確認できていない機能・設定は「未確認」と書く
 
-1. **New Relic へは読み取りのみ**。アラート・Workflow・Slack 設定は **ファイルとして生成するだけ**で、適用はユーザーが行う。
-2. **アプリ側の変更（`newrelic.yml`・XML・コード）も生成のみ**。再起動を伴うため本番反映は人間が判断する。
-3. **データは最小限に**。IP アドレスは既定で送らない設計を推奨する（`shared/privacy.md`）。IP の利用を提案するときは、必ず法務確認が必要な旨を添える。
-4. **PII を出力に含めない**。クエリ結果にユーザーIDや IP が含まれる場合は、レポートでは件数・ハッシュ・上位N件の要約にとどめる。
-5. **断定しない**。「AI エージェントによる攻撃」は兆候として報告し、確定とは書かない。
-6. 不確実な機能（iRCA の提供状況、MCP ツールの書き込み可否、JP エンドポイント URL 等）は、実際に確認できるまで「未確認」と書く。
+## コストとトークンを節約する（必ず守る）
+- **まとまった問い合わせ（前提の確認・Hunt）は `scripts/hunt.py`（NerdGraph）を優先する。** Claude は `hunt-summary.md` だけを読む。API キー（`NEW_RELIC_API_KEY`）が無いときだけ MCP で実行する
+- **MCP で問い合わせるときの規則**: 集計（`count`・`uniqueCount`・`percentage`）だけを使い、`SELECT *` や生のイベントを取らない。`FACET` は `LIMIT 20` まで。`SINCE` は必要最小限。Ground Truth の **AI を使う分析系ツールは使わず**、NRQL の実行だけに使う
+- **参照ファイルを丸ごと読まない**: まず `python3 <root>/scripts/catalog.py index --stage <段階>` で一覧を見て、必要な ID だけ `catalog.py show D01 I05 …` で読む
+- 結果は `.authz-radar/` に保存し、**同じ期間・同じ段階の結果があれば再利用する**
+- **Autopilot は CRITICAL（証拠）のアラートからだけ。** Skill からも定期の Hunt からも呼ばない
+- チャットには要約だけを出し、全文は `.authz-radar/report.md` に書く
 
-## リージョンの選択
+## 目的ごとの進め方
+最初に依頼の目的を判定し、混ぜない。曖昧なら前提の確認から始める。リージョンは `newrelic-us`（JP は利用者が `newrelic-jp` を追加）。
 
-プラグインは `newrelic-us` を登録している。JP リージョンのアカウントでは、ユーザーが `newrelic-jp` を追加する（README 参照）。
-接続できているサーバーを確認し、ユーザーの指定またはアカウントのリージョンに応じて使い分ける。`newrelic-jp` が無いのに JP のアカウントを指定された場合は、追加方法を案内する。
-認証は OAuth が標準（一部ツールは OAuth 専用）。API Key で接続している場合は、使えないツールがあることを最初に伝える。
-
-## 目的とモード
-
-扱う問題は4つの別々の目的に分かれる（`shared/goals.md`）。ユーザーの依頼がどの目的かを最初に判定し、**混ぜない**。
-
-| 目的 | 使うもの |
-|---|---|
-| ① 棚卸し | `api-authz-review` Skill（コード）＋ `references/usage.nrql.md` の U01・U02 |
-| ② 利用実態 | `references/usage.nrql.md`（U01〜U06） |
-| ③ 攻撃検知 | `references/detections.nrql.md`（D01〜D23） |
-| ④ 調査 | `references/investigation.nrql.md`（I01〜I07） |
-
-どの目的でも、最初に **前提の確認**（Readiness）を行う。依頼が曖昧なら Readiness から始める。
-
-### 前提の確認（Readiness）
-`references/readiness-checks.md` の R01〜R15 を順に実行し、**現在の段階（S0〜S3）とデータソース**を判定する。
-- 認可属性が届いているか、全エンドポイントに付いているか（計装漏れ）
-- High-security mode の有無（推定 + ユーザーに確認）
-- Browser / Mobile との分散トレーシング、Span の SQL 文、デプロイ記録
-- トランザクション名の品質（R12）、プライバシー（R11）、**API の方式（R15。WebSocket のメッセージが計装されていないと S2 の属性は捨てられる）**
-- サンプリングと保存期間（R13・R14。④ 調査の前提）
-- Errors Inbox / Performance Risks Inbox を MCP で扱えるか、**Autopilot / iRCA のオン・オフ**
-
-### ② 利用実態
-`references/usage.nrql.md` を実行する。攻撃かどうかは判定しない。結果は ① 棚卸しの突き合わせと、優先度の `traffic_rpm` に使う。
-
-### ③ 攻撃検知（Hunt）
-`references/detections.nrql.md` のうち、**現在の段階とデータソースで実行できるものだけ**を実行する。
-- 実行順: D01（IDOR 成功）→ A 認可 → B SQLi → E RCE → C 認証・AI エージェント → D 例外・変更相関
-- **D01 で1件でも見つかったら、他の検知より先にユーザーへ報告する。D20 と D21 が同じ時間帯に出たときも同様**（RCE の可能性が高い）。
-- **REST 以外の方式では D04・D10 は反応しない**（`shared/protocols.md`）。反応しないことを「安全」と書かず、D22 を使う。GraphQL はトランザクション名ではなく `api.operation` で集計する。
-- 「要検証」のクエリがエラーになったら、簡略化して再試行し、その旨を報告する。
-- 結果は脅威ごとに `strong` / `weak` / `none` / 判定不能（理由）で報告する。
-- 兆候がある場合は D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分ける。兆候の対象を深掘りするなら ④ 調査に進む。
-- `api-authz-review` と連携する場合は、同ファイル末尾のルールでエンドポイント別の `attack_signal` を作る。
-
-### ④ 調査
-`references/investigation.nrql.md` の手順に従う。**最初に I05〜I07 で記録が残っているかを確かめ**、APM は手がかり、ログで確定させる。
-「取得された可能性がある」と「取得された（ログで確認済み）」を区別して書く。
-
-### 推奨の作成（計装・アラート）
-- 計装: `shared/attribute-spec.md` の **計装の手段**（yml → XML → API）から、最も手軽に済むものを推奨する。次の段階（S1〜S3）に進むために必要な作業として示す。
-  コードの監査と組み合わせる場合は `api-authz-review` Skill を使う。
-  - Java（Spring Boot / Spring Security）: `references/instrumentation-java.md`。計装ライブラリ（`instrumentation/java/`）で **S2 に最短で到達**できる。まず OBSERVE モードを推奨する。
-  - Python・Node.js・Ruby・Go・PHP・.NET: `references/instrumentation-other-languages.md`（`instrumentation/<言語>/` のファイルを取り込む。PHP は API 名が未確認、.NET は未コンパイル）。
-  - XML（コード変更なし）: `scripts/gen_xml_candidates.py <src>` で認可チェックのメソッドを探し、XML の候補とレポートを出す。値の比較はできないので S2 にはならない。
-- アラート条件・Alert Workflow・Slack 通知: **前提の確認で判定した段階とデータソース**を使って、ファイルとして生成する（適用はユーザーが行う）。
-  ```bash
-  python3 <plugin-root>/scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out <出力先>
-  ```
-  - 生成されるのは、今の段階とデータソースで動くアラートだけ（定義は `shared/alerts.json`）。生成しなかったものは `SKIPPED.md` に「何があれば追加できるか」付きで出るので、レポートの「推奨」に使う。
-  - Slack の Destination は New Relic の画面で作成する必要がある（OAuth のため）。その ID を変数で渡す。
-  - CRITICAL と HIGH（warning）でチャンネルを分ける。**Autopilot に渡すのは CRITICAL だけ**（上限対策）。
-- Workflow Automation: `templates/workflow-automation/security-triage.yaml`（**下書き・未検証**）。Autopilot / iRCA のオン・オフは入力値で切り替える。プロンプトの説明は `templates/autopilot/security-prompt.md`。
-- Knowledge: `templates/knowledge-runbooks/` を New Relic Knowledge に登録するよう推奨する（Autopilot が調査中に参照する。アラート条件の `runbook_url` からもリンクされる）。
-- Slack の通知形式: `templates/slack/security-alert.md`（「今わかること」と「推奨」を分ける）。
-
-## レポートの書き方（必ず守る）
-
-`shared/goals.md` の「レポートの書き方」に従い、**「今のデータでわかること・できること」と「推奨（段階的に）」を別の節に分ける。**
-- 前者には、現在の段階・データソース・実行した確認の結果だけを書く。できなかったものは「判定不能（理由）」と書く。
-- 後者の各項目には、**それをやると何がわかるようになるか**と**どの目的に効くか**を書く。
-- 推測で「今わかること」を埋めない。
-
-## Autopilot / iRCA のオン・オフによる動作
-
-Workflow Automation は1本の定義の中で分岐させる（機能を有効にしてもテンプレートの差し替えが不要）。
-
-| 状態 | 有事の流れ | 「攻撃か、自分たちの不具合か」の判定 |
+| 目的 | 実行するもの | 読むもの |
 |---|---|---|
-| 両方オン | Workflow → `newrelic.autopilot.run`（iRCA の結果を含む）→ Slack スレッドで対話 | iRCA |
-| Autopilot のみ | Workflow → `newrelic.autopilot.run` → Slack | Autopilot + 自前の変更相関 |
-| iRCA のみ | Workflow → NRQL で情報付与 → Slack（iRCA へのリンク） | iRCA |
-| 両方オフ | Workflow → NRQL で情報付与 → Slack（固定ランブック） | 自前の変更相関 |
+| 前提の確認 | `catalog.py show R01 … R15` の NRQL（R02・R12・R13・R14・R15 が重要） | 結果の書き方は `catalog.py show` した各節の「出力形式」 |
+| ① 棚卸し | `api-authz-review` Skill ＋ U01・U02 | — |
+| ② 利用実態 | U01〜U06 | `shared/protocols.md`（REST 以外があるとき） |
+| ③ 攻撃検知 | `python3 <root>/scripts/hunt.py --app <appName> --account-id <id> --stage <S> --sources <…> --out .authz-radar/hunt` | `hunt-summary.md`。判定基準は該当 ID だけ `catalog.py show` |
+| ④ 調査 | **最初に I05〜I07**（記録が残っているか）→ I01〜I04 | `catalog.py show I01 … I07` |
+| 推奨（計装・アラート） | `gen_alerts.py`・`gen_xml_candidates.py` | `references/recommendations.md` |
 
-- **自前の変更相関**: デプロイ記録（Change Tracking / Deployment）と異常の開始時刻を NRQL で突き合わせ、直前のデプロイの有無を判定する。
-- **iRCA の読み方**: 内部に原因（デプロイ・資源上限）がある → 自分たちの不具合の可能性が高い。内部に原因が無い → 外部入力（攻撃）の可能性が高い。
-  認可属性の挙動が変わった直前にデプロイがある → 認可チェックの欠落（IDOR の作り込み）を疑う。
-- **Autopilot の上限**（1組織あたり1時間100リクエスト）を守るため、Autopilot に渡すのは Critical / High のみ。同一 Issue は1回にまとめる。
-- Autopilot は推奨のみで操作を実行しない。ブロックやトークン失効は Slack の承認を経由させる。
+攻撃検知の要点:
+- **D01（IDOR 成功）や D20＋D21（RCE の成功の可能性）が出たら、最初に報告する**
+- **REST 以外では D04・D10 は反応しない。** 反応しないことを安全と書かず、D22 を使う。GraphQL は `api.operation` で集計する
+- 兆候があれば D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分け、深掘りは ④ へ
+- `api-authz-review` と連携するときは、検知の結果からエンドポイント別の `attack_signal` を作る（`catalog.py show` の対象外。`detections.nrql.md` 末尾の節）
+
+## 参照（必要なときだけ）
+| 内容 | ファイル |
+|---|---|
+| 目的・段階・レポートの書き方・証拠の強さ | `shared/goals.md` |
+| 計装・アラート・Workflow・Autopilot / iRCA | `references/recommendations.md` |
+| Java / 他言語の計装 | `references/instrumentation-java.md`・`references/instrumentation-other-languages.md` |
+| API の方式（GraphQL・WebSocket 等） | `shared/protocols.md` |
+| データソース・属性・プライバシー | `shared/data-sources.md`・`shared/attribute-spec.md`・`shared/privacy.md` |
+| 規格の番号・証拠の強さ | `shared/standards.json`・`shared/detections.json` |

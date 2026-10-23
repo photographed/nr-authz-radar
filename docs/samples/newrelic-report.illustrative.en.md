@@ -66,7 +66,7 @@ Example request: "Check shop-api in New Relic. What attacks can we notice today,
    → What you learn: D01 (evidence of a successful IDOR), D22 (denials that also work for GraphQL and WebSocket) / Goal: ③
 5. **Next release**: make WebSocket messages transactions (the Java library handles STOMP automatically)
    → What you learn: access and IDOR over WebSocket / Goal: ②③
-6. **Alerts**: generate the 5 alerts available at S0 ([`alerts-SKIPPED-S0.en.md`](alerts-SKIPPED-S0.en.md) lists the rest and what they need). Regenerate after reaching S2 to add D01, D02 and D22
+6. **Alerts**: generate the 3 alerts available at S0 with spans (evidence D07; strong signals D06, D21 — [`alerts-SKIPPED-S0.en.md`](alerts-SKIPPED-S0.en.md) lists the rest and what they need). Volume or ratio anomalies (D04, D10, …) are not notified because they produce many false positives. Regenerate after reaching S2 to add D01 (evidence) and D02 (strong)
 
 ## Effect on the ranking (real computation)
 

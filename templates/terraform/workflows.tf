@@ -1,5 +1,8 @@
-# CRITICAL -> its own channel (and Workflow Automation / Autopilot, see templates/workflow-automation).
-# HIGH (warning) -> a quieter channel. Autopilot is not triggered for HIGH to stay within its rate limit.
+# CRITICAL = evidence-level detections only (shared/detections.json): its own channel, and
+#   Workflow Automation / Autopilot (templates/workflow-automation). Pages from day one.
+# HIGH = strong signals: a quieter channel, no Autopilot. Muted while learning_mode = true,
+#   so thresholds can be tuned before anyone is notified.
+# Anomalies live in a separate policy that no workflow points at (gen_alerts.py --include-anomaly).
 
 resource "newrelic_notification_channel" "slack_critical" {
   account_id     = var.account_id
@@ -55,6 +58,7 @@ resource "newrelic_workflow" "critical" {
 
 resource "newrelic_workflow" "warning" {
   name                  = "[authz-radar] warning"
+  enabled               = !var.learning_mode
   muting_rules_handling = "NOTIFY_ALL_ISSUES"
 
   issues_filter {

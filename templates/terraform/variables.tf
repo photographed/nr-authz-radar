@@ -40,3 +40,9 @@ variable "slack_channel_id_warning" {
   type        = string
   description = "Slack channel ID for HIGH (warning) issues"
 }
+
+variable "learning_mode" {
+  type        = bool
+  default     = true
+  description = "While true, HIGH (strong signal) notifications are off so thresholds can be tuned. CRITICAL (evidence) always notifies."
+}

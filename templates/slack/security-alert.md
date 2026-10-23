@@ -22,4 +22,6 @@ Workflow Automation（`security-triage.yaml` の `notify`）と、手動で投�
 ## ルール
 - 生のユーザー ID・IP・メールアドレスを書かない。
 - 判定できなかったことは「判定不能（理由）」として必ず書く。
-- CRITICAL はメンション付きのチャンネル、HIGH（warning）は静かなチャンネルに分ける（`templates/terraform/workflows.tf`）。
+- **CRITICAL は証拠の強さが「証拠」の検知だけ**（D01・D07）。メンション付きのチャンネルに送り、Autopilot も呼ぶ。
+- HIGH は「強い兆候」。静かなチャンネルに送る。導入直後（`learning_mode = true`）は通知しない。
+- 「異常」は通知しない（日次で確認する）。
