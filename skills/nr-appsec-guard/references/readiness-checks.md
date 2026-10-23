@@ -27,8 +27,9 @@ SELECT keyset() FROM Transaction WHERE appName = '{appName}' SINCE 1 day ago
 | `authz.decision`, `resource.owner_match`, `resource.type` | D01, D02, D05 |
 | `authz.required_scope`, `authz.deny_reason` | D05 |
 | `enduser.id` | D02, D03, D11, D13 |
-| `client.ip_hash` | D11, D14（アクセスログが Logs にあれば代替可） |
-| `api.key_id`, `client.country` | D14 |
+| `client.asn`, `client.country` | D11, D14（L0） |
+| `edge.verdict` | D11 の補助 |
+| `api.key_id` | D14 |
 | `auth.token_age_sec` | D15 |
 | `request.uri` | D03 |
 
@@ -84,6 +85,25 @@ NRQL では判定できない。次の順で判定する。
 
 ### R10 MCP の認証方式
 API Key で接続している場合、OAuth 専用のツールは使えない。使えなかったツールを一覧にして報告する。
+
+### R11 送ってしまっている個人データ（プライバシー監査）
+`shared/privacy.md` に基づき、**検知のために送る必要のない個人データ**が入っていないかを確認する。
+`R02` の `keyset()` の結果から、次のような属性名を探す。
+- IP: `request.headers.x-forwarded-for`、`request.headers.x-real-ip`、`client.ip`、`remote_addr`
+- 連絡先: `request.parameters.email`、`email`、`phone`、`tel`
+- 認証情報: `request.headers.authorization`、`request.headers.cookie`、`password`、`token`
+
+値の形式も確認する（**値そのものはレポートに載せず、件数だけを示す**）:
+```sql
+SELECT count(*) FROM Transaction
+WHERE appName = '{appName}' AND enduser.id RLIKE '.*@.*'
+SINCE 1 day ago
+```
+（`enduser.id` にメールアドレスが入っていないか。同様に IP 形式 `[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+` も確認する）
+
+- Span の `db.statement` が生 SQL（`record_sql: raw`）になっていないか（R06）
+- Log に IP やメールアドレスがそのまま入っていないか。入っていれば、ログの難読化ルール・drop rules を推奨する
+- 見つかったものは「削除・難読化の推奨」として報告し、重大度は **High** とする（漏えい時の影響が大きいため）
 
 ## 出力形式
 

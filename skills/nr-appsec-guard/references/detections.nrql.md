@@ -20,7 +20,7 @@ Hunt モードで実行するクエリ集。各検知は **前提条件**（`rea
 | URI | `request.uri`（Java エージェントは既定で送信） |
 | SPAN | 分散トレーシングの Span（`db.statement` を含む） |
 | BRW | Browser エージェント + 分散トレーシング |
-| IP | `client.ip_hash`（APM は既定でクライアント IP を送らないため計装が必要）または IP を含むアクセスログ |
+| NET | `client.asn` / `client.country`（L0・既定）。IP 粒度が必要なら `client.ip_hmac`（L1・オプトイン）。`shared/privacy.md` 参照 |
 | DEP | Change Tracking（デプロイ記録） |
 
 ---
@@ -142,15 +142,27 @@ FACET name SINCE 1 hour ago COMPARE WITH 1 week ago TIMESERIES 5 minutes
 ```
 - 判定: 先週同時刻の5倍以上 → `strong`、2倍以上 → `weak`
 
-### D11 分散アクセス（少数アカウント × 多数 IP）— 前提 IP, UID
+### D11 分散アクセス（少数アカウント × 多数のネットワーク）— 前提 NET, UID
 ```sql
-SELECT uniqueCount(client.ip_hash) AS ips, count(*) AS requests
+-- L0（既定）: ASN と国の粒度
+SELECT uniqueCount(client.asn) AS asns, uniqueCount(client.country) AS countries, count(*) AS requests
 FROM Transaction WHERE appName = '{appName}'
 FACET enduser.id SINCE 1 hour ago LIMIT 20
 ```
-- 判定: 1アカウントで1時間に 50 IP 以上 → `strong`、10 IP 以上 → `weak`
+```sql
+-- L1（オプトイン時のみ）: IP の粒度
+SELECT uniqueCount(client.ip_hmac) AS ips, count(*) AS requests
+FROM Transaction WHERE appName = '{appName}'
+FACET enduser.id SINCE 1 hour ago LIMIT 20
+```
+- 判定（L0）: 1アカウントで1時間に 10 ASN 以上、または 3か国以上 → `strong`、5 ASN 以上 → `weak`
+- 判定（L1）: 1アカウントで1時間に 50 IP 以上 → `strong`、10 IP 以上 → `weak`
   （参考: 40分で326 IP・1,200件超という観測報告がある。`shared/threat-model-2026-jp.md`）
-- `client.ip_hash` が無い場合: アクセスログ（ALB / CloudFront / nginx）を Logs に送っていれば、同じ集計を `Log` に対して行う。
+- L0 は精度が下がる（同じ ASN 内で IP を変える攻撃は見えない）。**IP 粒度の判定は WAF / CDN に任せ、`edge.verdict` を併用する**のが推奨。
+  ```sql
+  SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND edge.verdict IN ('challenge', 'bot')
+  FACET enduser.id, name SINCE 1 hour ago LIMIT 20
+  ```
 
 ### D12 ブラウザを経由しない API 直叩き — 前提 BRW — 要検証
 ```sql
@@ -173,13 +185,13 @@ FACET enduser.id
 - 判定: 平均 20件/分以上 かつ 標準偏差が平均の 10% 未満 → `weak`
 - 人間の操作は間隔がばらつく。一定すぎるアクセスは自動化の兆候（AI エージェントとは断定しない）。
 
-### D14 API キーの異常な使われ方 — 前提 ATTR（`api.key_id`）, IP
+### D14 API キーの異常な使われ方 — 前提 ATTR（`api.key_id`）, NET
 ```sql
-SELECT uniqueCount(client.ip_hash) AS ips, uniqueCount(client.country) AS countries, count(*)
+SELECT uniqueCount(client.asn) AS asns, uniqueCount(client.country) AS countries, count(*)
 FROM Transaction WHERE appName = '{appName}' AND api.key_id IS NOT NULL
 FACET api.key_id SINCE 1 day ago COMPARE WITH 1 week ago
 ```
-- 判定: 1つのキーで国の数が増えた、または IP 数が平常時の5倍以上 → `strong`
+- 判定: 1つのキーで国の数が増えた、または ASN 数が平常時の5倍以上 → `strong`（L1 なら `client.ip_hmac` で同様に集計できる）
 
 ### D15 有効期限の長すぎるトークン — 前提 ATTR（`auth.token_age_sec`）
 ```sql

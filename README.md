@@ -54,12 +54,12 @@ python3 scripts/risk_score.py examples/findings.sample.json \
 
 - **生成のみ**: New Relic のアラート・Workflow、アプリの `newrelic.yml`・XML・コードは、すべてファイルや差分として出力します。適用は人が行います。
 - **断定しない**: 「AI エージェントによる攻撃」は兆候として扱います。コードだけで判定できないものは `needs_review` にします。
-- **PII を送らない・出さない**: 属性はハッシュ化を前提にしています。
+- **データは最小限に**: IP アドレスは既定で New Relic に送りません（GDPR では個人データ、日本法でも個人関連情報に当たり得るため）。IP 粒度の分析は WAF / CDN に任せ、判定結果だけを受け取る設計です。詳細は [`shared/privacy.md`](shared/privacy.md)。
 
 ## ロードマップ
 
 - [x] Phase 1: 共通仕様（属性、OWASP 対応、脅威モデル、ランキング）、Skill の骨組み、ランキングスクリプト
-- [x] Phase 2: Readiness 監査（R01〜R10）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
+- [x] Phase 2: Readiness 監査（R01〜R11）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
 - [ ] Phase 3: Java（Spring Security）の計装サンプル、XML 候補の生成 → 以降、APM エージェント対応の全言語
 - [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
 - [ ] Phase 5: 攻撃シナリオでの検証
