@@ -24,6 +24,8 @@ Errors Inbox・Performance Risks Inbox・既定のアラートでは原理的に
 | `resource.type` | string | `order` | **必須** | アクセス対象リソースの種別 |
 | `resource.owner_match` | boolean | `true` / `false` | **必須（IDOR検知の核）** | データ取得層で「要求者 = 所有者 / 同テナントか」を判定した結果 |
 | `client.type` | string | `web` / `mobile` / `api_key` / `service` / `unknown` | 推奨 | 呼び出し元の種別。アプリ解析による API 直叩きの検出用 |
+| `client.ip_hash` | string | `ip_7c1e…`（HMAC） | 推奨 | 送信元 IP のハッシュ。**APM エージェントは既定でクライアント IP を送らない**ため、分散アクセス（多数 IP）の検知に必要。プロキシ配下では `X-Forwarded-For` の信頼できる位置から取る |
+| `client.country` | string | `JP` | 任意 | 送信元の国（エッジや GeoIP で判定）。API キーの異常利用・地域制限の検討用 |
 | `api.key_id` | string | `k_1a2b3c4d`（ハッシュ先頭8文字） | api_key時推奨 | 窃取キーの使い回し検出用 |
 | `auth.token_age_sec` | int | `86400` | 任意 | トークン発行からの経過秒。長寿命トークンの検出用 |
 
@@ -39,7 +41,7 @@ resource.owner_match = false AND authz.decision = 'allow'
 
 ## 設計ルール
 
-1. **PII を送らない**: `enduser.id`・`api.key_id` はハッシュ（HMAC 推奨。ソルトはアプリ側で管理）。
+1. **PII を送らない**: `enduser.id`・`api.key_id`・`client.ip_hash` はハッシュ（HMAC 推奨。ソルトはアプリ側で管理）。
 2. **カーディナリティを抑える**: リソースID・URL のクエリ文字列・自由文は属性にしない。
    `authz.deny_reason` と `client.type` は上表の列挙値のみ。
 3. **deny は expected error として記録**: 例外を `noticeError(…, expected=true)` で送ると Errors Inbox で
@@ -47,7 +49,7 @@ resource.owner_match = false AND authz.decision = 'allow'
 4. **High-security mode との関係**: HSM 有効時は custom attribute / user 属性が送れない。
    その場合は Readiness 監査で「属性ベース検知は不可」と判定し、代替（Logs 経由）を提示する。
 5. **上限**: エージェントには custom attribute 数・値長の上限がある（目安: 1イベント64個、値255文字。
-   エージェント・バージョンごとに要確認）。本仕様は最大11個に収めている。
+   エージェント・バージョンごとに要確認）。本仕様は最大13個に収めている。
 
 ## 計装の3段階（Java の場合）
 

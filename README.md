@@ -59,7 +59,7 @@ python3 scripts/risk_score.py examples/findings.sample.json \
 ## ロードマップ
 
 - [x] Phase 1: 共通仕様（属性、OWASP 対応、脅威モデル、ランキング）、Skill の骨組み、ランキングスクリプト
-- [ ] Phase 2: Readiness 監査と Hunt の NRQL カタログ
+- [x] Phase 2: Readiness 監査（R01〜R10）と Hunt の NRQL カタログ（D01〜D18）。一部クエリは実アカウントで要検証
 - [ ] Phase 3: Java（Spring Security）の計装サンプル、XML 候補の生成 → 以降、APM エージェント対応の全言語
 - [ ] Phase 4: アラート条件・Workflow Automation（Autopilot / iRCA 分岐）・Slack・Knowledge 用ランブックのテンプレート
 - [ ] Phase 5: 攻撃シナリオでの検証

@@ -85,12 +85,10 @@ WHERE appName = '{appName}' SINCE 7 days ago FACET name LIMIT MAX
 - Spring のトランザクション名は設定によって `WebTransaction/SpringController/orders/{id} (GET)` 形式や
   `OrderController/getOrder` 形式になる。どちらでも突き合わせられるよう、パスとハンドラ名の両方で照合する。
 - 一致しないものは `traffic_rpm: null`（未観測）。**0 と null を混同しない。**
-- `attack_signal`（Phase 2 で精緻化。現時点の目安）:
-  - `strong`: `resource.owner_match = false AND authz.decision = 'allow'` が存在する、またはそのエンドポイントで deny / 404 が平常時の5倍以上
-  - `weak`: deny / 404 が平常時の2倍以上、または少数ユーザー × 多数 IP
-  - `none`: それ以外、または属性が無く判定できない（その場合はレポートに「判定不能」と書く）
+- `attack_signal`: `nr-appsec-guard` の `references/detections.nrql.md` を実行し、末尾の「エンドポイント別 `attack_signal` の決め方」に従って決める。
+  判定不能だった場合はスコア上 `none` として渡し、レポートに「判定不能（理由）」と書く。
 
-あわせて **シャドー API**（New Relic にトラフィックがあるのにソースに無い）と
+トラフィック一覧は D16 でも取得できる。あわせて **シャドー API**（New Relic にトラフィックがあるのにソースに無い）と
 **ゾンビ API**（ソースにあるのにトラフィックが無い）を一覧にする（OWASP API9）。
 
 ### Step 6. 順位付けする
