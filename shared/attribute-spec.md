@@ -69,6 +69,21 @@ resource.owner_match = false AND authz.decision = 'allow'
 5. **上限**: エージェントには custom attribute 数・値長の上限がある（目安: 1イベント64個、値255文字。
    エージェント・バージョンごとに要確認）。本仕様は最大18個に収めている。
 
+## 認可判断のログ行（任意。属性を送れない環境と、ログのラストワンマイル用）
+
+カスタム属性を送れない環境（High-security mode など）や、ログで証拠の詳細をたどりたい場合に、決まった形のログ行を出す。
+**拒否したときと、所有者が違うのに通したとき（OBSERVE・正当な例外）だけ** に1行出す。通常の許可では出さない（量を抑えるため）。
+
+```
+authz-radar decision=deny owner_match=false reason=owner_mismatch resource.type=order api.operation=-
+authz-radar decision=allow owner_match=false reason=- resource.type=order api.operation=Query.order
+authz-radar decision=allow owner_match=false reason=- resource.type=order api.operation=- bypass=admin:read
+```
+
+- **ユーザー ID・リソース ID・IP は入れない。** 誰のアクセスかは、Logs in context がログ行に付けるトレース ID から APM でたどる
+- 2行目の形（`decision=allow owner_match=false` で `bypass` なし）は **D01 と同じ意味**（他人のデータを返した証拠）。`logs.nrql.md` の L04 で数える
+- Java は計装ライブラリの `nr.authz-radar.log-decisions=true`。他の言語は同じ形で出す
+
 ## 計装の手段（Java の場合）
 
 | 手段 | 方法 | コード変更 | 取れる属性 |

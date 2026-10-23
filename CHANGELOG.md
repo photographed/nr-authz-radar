@@ -7,6 +7,19 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-23
+
+### Added
+- ログのラストワンマイル `references/logs.nrql.md`（L01 IDOR の証拠のログ行、L02 調査の全件化、L03 エッジでの遮断、L04 認可判断のログ行）。**ログはスキャンしない**: 全クエリが APM 由来のキーか明示的なフィルタ・時間の範囲・件数の上限で絞られていることと、`hunt.py` がログを読まないことをテストで確認
+- 前提の確認 R16（Logs in context が効いているか、認可判断のログ行があるか）
+- Workflow Automation に、CRITICAL のときだけ L01 のログ行を取りに行く手順（`logsEnabled`。未検証）
+- Java ライブラリの `log-decisions`: 拒否と、所有者が違うのに通したときだけ、決まった形のログ行を1行出す（ユーザー ID は入れない）。High-security mode で属性が送れない場合の代わり。形式は `shared/attribute-spec.md`
+- D24（ブラウザのセッションが無いユーザーの API 呼び出し）: `hunt.py` が APM と Browser の2つのクエリを実行して差を取る。U07（画面から来た拒否と直接来た拒否）
+- `shared/inbox-integration.md`: Errors Inbox（エラーグループの状態の反映）と Performance Risks Inbox（リスクのセキュリティでの読み替え）の連携の設計。**データの取得は未実装**
+
+### Changed
+- **README・Skill の説明を実態に合わせて修正**: Errors Inbox は元データ（`TransactionError`）を使っているだけ、Performance Risks Inbox は未実装、Browser は一部であることを「連携状況」の表に明記
+
 ## [0.10.0] - 2026-10-23
 
 ### Added

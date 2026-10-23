@@ -35,11 +35,19 @@ public class AuthzTelemetry {
     private final TelemetryRecorder recorder;
     private final Pseudonymizer pseudonymizer;
     private final boolean full;
+    private final DecisionLog decisionLog;
 
     public AuthzTelemetry(TelemetryRecorder recorder, Pseudonymizer pseudonymizer, AttributeSet attributeSet) {
+        this(recorder, pseudonymizer, attributeSet, null);
+    }
+
+    /** @param decisionLog optional; {@code null} writes no decision log lines */
+    public AuthzTelemetry(TelemetryRecorder recorder, Pseudonymizer pseudonymizer, AttributeSet attributeSet,
+                          DecisionLog decisionLog) {
         this.recorder = recorder;
         this.pseudonymizer = pseudonymizer;
         this.full = attributeSet == AttributeSet.FULL;
+        this.decisionLog = decisionLog;
     }
 
     public void requiredScope(String scope) {
@@ -125,6 +133,10 @@ public class AuthzTelemetry {
             recorder.expectedError(cause,
                     reason == null ? Map.of() : Map.of(AuthzAttributes.DENY_REASON, reason));
         }
+        if (first && decisionLog != null) {
+            decisionLog.write(DecisionLog.line(AuthzAttributes.DENY, s.ownerMismatch ? Boolean.FALSE : null,
+                    s.denyReason, s.resourceType, operation(s), null));
+        }
     }
 
     /**
@@ -165,12 +177,32 @@ public class AuthzTelemetry {
         recorder.attribute(AuthzAttributes.OPERATION, s.operations.size() > MAX_OPERATIONS ? joined + ",…" : joined);
     }
 
+    /**
+     * An owner mismatch that was allowed (OBSERVE mode, or a bypass authority). Writes the
+     * decision log line that means the same as detection D01 (or its excluded bypass case).
+     */
+    public void mismatchLetThrough(String bypassScope) {
+        State s = state();
+        if (decisionLog != null && !s.mismatchLogged) {
+            s.mismatchLogged = true;
+            decisionLog.write(DecisionLog.line(AuthzAttributes.ALLOW, Boolean.FALSE, null, s.resourceType,
+                    operation(s), bypassScope));
+        }
+    }
+
+    private static String operation(State s) {
+        return s.operations.isEmpty() ? null : String.join(",", s.operations);
+    }
+
     public boolean decisionRecorded() {
         return state().decision != null;
     }
 
     public void ownership(String resourceType, boolean ownerMatches) {
         State s = state();
+        if (resourceType != null && !resourceType.isBlank()) {
+            s.resourceType = resourceType;
+        }
         if (full && resourceType != null && !resourceType.isBlank()) {
             recorder.attribute(AuthzAttributes.RESOURCE_TYPE, resourceType);
         }
@@ -203,6 +235,8 @@ public class AuthzTelemetry {
         String requiredScope;
         boolean ownerMismatch;
         String denyReason;
+        String resourceType;
+        boolean mismatchLogged;
         int checkCount;
         final TreeSet<String> operations = new TreeSet<>();
     }

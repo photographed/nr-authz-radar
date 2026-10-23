@@ -15,7 +15,7 @@
 IDOR は攻撃が成功すると **200 OK** で返ります。ログを集めて相関しても「正常なアクセス」にしか見えません。
 **攻撃が成功した IDOR を証拠として見つける**には、アプリ自身が「誰のデータに触れたか」を送る必要があります（必要なのは2属性だけ）。
 一方で、それ以外の多くのこと（API の棚卸し、利用実態、SQLi や RCE の兆候、認証攻撃）は、**APM を入れただけの状態からでもできます。**
-このプラグインは、ソースコードの **認可監査**、APM・Browser・Errors Inbox・Performance Risks Inbox を使った **利用実態の把握と検知**、
+このプラグインは、ソースコードの **認可監査**、APM・分散トレーシング・Browser・ログを使った **利用実態の把握と検知**、
 **調査の手順**、そして **段階的な計装の推奨** をセットで提供します。
 
 ## 4つの目的
@@ -80,6 +80,17 @@ Readiness 監査は、この表を上から順に確認して不足を指摘し�
 | 任意 | Infrastructure / Network Performance Monitoring | `SystemSample`、`ProcessSample` など | 侵入後の兆候（不審なプロセス・通信） |
 | 任意 | Vulnerability Management | — | 使っているライブラリの既知の脆弱性 |
 | 任意（申請制） | **IAST**（Limited Preview。Java は [New Relic Security Agent](https://github.com/newrelic/csec-java-agent)） | — | テスト環境で SQLi・RCE・デシリアライズなどを検出し、コード監査の結果を裏付ける。**本番環境では使わない**。**IDOR などの認可の不備は IAST の対象外**なので、このプラグインと補い合う（[役割分担](shared/data-sources.md#4-iast-とこのプラグインの役割分担)） |
+
+### New Relic の機能との連携状況（正直な現状）
+
+| 機能 | 状態 | 内容 |
+|---|---|---|
+| APM（Transaction・TransactionError）・分散トレーシング（Span） | ✅ 使用 | 検知・利用実態・調査の土台 |
+| Browser | ⚠️ 一部 | `AjaxRequest`（U02）、Browser 由来の分散トレーシング（`parent.type`。D12・U03）、**ブラウザのセッションが無いユーザーの API 呼び出し（D24）**。`JavaScriptError` などは未使用 |
+| Logs（Logs in context・アクセスログ） | ✅ ラストワンマイル | **スキャンはせず**、APM の手がかり（トレース ID・ユーザー・時間帯）で範囲を絞って取りに行く（L01〜L04、R16） |
+| Errors Inbox | ⚠️ 間接的 | 元データの `TransactionError` を NRQL で使用（D06・D17・D21）。**エラーグループの状態（未対応・解決済み・無視）などの連携は未実装**（設計: [`shared/inbox-integration.md`](shared/inbox-integration.md)） |
+| Performance Risks Inbox | ❌ 未実装 | セキュリティの観点での読み替えを設計済み（同上）。データの取り出し方を実物で確認してから実装する |
+| Autopilot・iRCA | ⚠️ 下書き | Workflow Automation から呼ぶ形の下書き（未検証） |
 
 ### トランザクション名が API 単位になっているか
 
@@ -175,6 +186,21 @@ python3 scripts/gen_alerts.py --stage S2 --sources spans,browser_dt --out out/te
 | Workflow Automation（`templates/workflow-automation/security-triage.yaml`） | **下書き・未検証**。一部のアクション名・入出力の書き方は公式テンプレートと照合が必要 |
 | Slack 通知の形式・Autopilot のプロンプト・ランブック | 完成 |
 
+## ログ（ラストワンマイル）
+
+**ログはスキャンしません。** APM で見つけた手がかり（トレース ID・ユーザー・時間帯）を起点に、ピンポイントで取りに行きます。ログ全体を攻撃の文字列で検索するやり方（SIEM 型）は、偽陽性とコストが増えるだけなので採りません。
+
+| ID | 内容 | 起点 |
+|---|---|---|
+| L01 | **IDOR の証拠のログ行**（誰の、どのレコードか） | D01 のトレース ID |
+| L02 | 調査対象のアクセスの全件（APM に入らないクエリ文字列、サンプリングで漏れた分） | ④ 調査の対象と期間 |
+| L03 | エッジ（WAF・CDN）で遮断されたリクエスト | 兆候の時間帯 |
+| L04 | アプリが出した認可判断のログ行（High-security mode で属性が送れない場合の代わり） | アプリ名と期間 |
+
+- CRITICAL（証拠）のときは、Workflow Automation が L01 のログ行を取りに行きます（`logsEnabled`）
+- Java ライブラリの `log-decisions: true` で、拒否と「所有者が違うのに通した」ときだけ、決まった形の1行を出します（ユーザー ID は入れない）
+- 前提の確認 R16 で、Logs in context が効いているか（ログにトレース ID が付いているか）を確認します
+
 ## コストとトークン
 
 - **定期の Hunt は `scripts/hunt.py`（NerdGraph で NRQL を直接実行。AI を使わない）**。毎日は軽量（`--levels evidence,strong`。最大7クエリ）、週1回は全部（最大21クエリ）
@@ -208,7 +234,7 @@ python3 scripts/catalog.py index --stage S2                                     
 | A07 Authentication Failures | ○ | 認証なしの API（F1）、認証失敗の急増（D10）、長寿命トークン（D15）、API キーの異常利用（D14）、WebSocket の接続中の権限確認（F12） | パスワードポリシー・MFA・セッション管理の監査 |
 | A08 Software or Data Integrity Failures | △ | **安全でないデシリアライズのみ**（F10、D21） | CI/CD・署名・更新の完全性の検証 |
 | A09 Security Logging and Alerting Failures | ◎ | 前提の確認（R01–R15。サンプリング・保存期間・WebSocket の計装漏れを含む）、調査の手順（I01–I07）、検知に必要な属性の計装推奨、アラートと Slack 通知の生成 | ログの長期保管・改ざん防止 |
-| A10 Mishandling of Exceptional Conditions | △ | 新しい種類の例外の出現（D17）、Errors Inbox の活用 | 例外処理のコード監査全般 |
+| A10 Mishandling of Exceptional Conditions | △ | 新しい種類の例外の出現（D17。Errors Inbox の元データ `TransactionError` を使用） | 例外処理のコード監査全般 |
 
 ### OWASP API Security Top 10:2023
 
@@ -340,6 +366,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.8.0** REST 以外の方式（GraphQL・SOAP・gRPC・WebSocket・JSON-RPC）への対応: `api.protocol`・`api.operation`、方式に依存しない検知 D22・D23、R15、U06、F11・F12、Java ライブラリの GraphQL・STOMP 対応
 - [x] **v0.9.0** 英語対応（README・はじめに・サンプル・スクリプトの `--lang en`・Skill の出力言語）、はじめにのドキュメント、サンプルの実行結果
 - [x] **v0.10.0** 証拠の強さ（証拠 / 強い兆候 / 異常）による報告とアラートの振り分け、`hunt.py`（NerdGraph）、トークン削減（短い SKILL.md・`catalog.py`・`inventory_java.py`・差分モード）、コストの整理
+- [x] **v0.11.0** 連携状況の表記を実態に合わせて修正、Browser の突き合わせ（D24・U07）、Errors Inbox・Performance Risks Inbox の連携の設計、ログのラストワンマイル（L01〜L04・R16・Workflow・Java の認可判断のログ行）
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考

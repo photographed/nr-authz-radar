@@ -45,7 +45,9 @@ public class OwnershipAspect {
             String bypass = bypassAuthority(auth);
             if (bypass != null) {
                 // Legitimate cross-owner access (admin / support): label it so D01 can exclude it.
-                telemetry.bypass(bypass.replaceFirst("^SCOPE_", ""));
+                String scope = bypass.replaceFirst("^SCOPE_", "");
+                telemetry.bypass(scope);
+                telemetry.mismatchLetThrough(scope);
                 continue;
             }
             if (mode == CheckOwnership.OwnershipMode.ENFORCE) {
@@ -53,6 +55,7 @@ public class OwnershipAspect {
                 telemetry.deny(AuthzAttributes.REASON_OWNER_MISMATCH, denied);
                 throw denied;
             }
+            telemetry.mismatchLetThrough(null);   // OBSERVE: the D01 case
         }
         return result;
     }

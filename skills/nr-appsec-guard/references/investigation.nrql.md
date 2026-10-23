@@ -82,6 +82,7 @@ SELECT * FROM Log WHERE trace.id IN ({traceIds}) SINCE {from} UNTIL {to} LIMIT M
 ```
 - `uniques()` は返す件数に上限がある。多い場合は時間帯を分けて実行する。
 - Logs in context が無い場合は、時刻とユーザーでアクセスログを突き合わせる（精度は下がる）。
+- 入れ子のクエリで1回にまとめた形と、アクセスログ（クエリ文字列）での穴埋めは `logs.nrql.md` の L02。
 
 ## C. レポートの形式
 

@@ -15,7 +15,7 @@ FIXTURE = ROOT / "tests" / "fixtures" / "java-authz" / "src" / "main" / "java"
 class CatalogTest(unittest.TestCase):
     def test_index_lists_every_item_compactly(self):
         text = catalog.index()
-        for prefix, count in (("D", 21), ("U", 6), ("I", 7), ("R", 15)):
+        for prefix, count in (("D", 22), ("U", 7), ("I", 7), ("R", 16), ("L", 4)):
             self.assertEqual(sum(line.startswith(prefix) for line in text.splitlines()), count, prefix)
         refs = sum(len((catalog.REFS / f).read_text()) for f in catalog.FILES.values())
         self.assertLess(len(text), refs / 8)   # the point: an index is far smaller than the files

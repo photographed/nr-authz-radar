@@ -121,6 +121,20 @@ SELECT count(*) FROM Transaction WHERE appName = '{appName}' FACET api.protocol 
 - GraphQL があるなら、トランザクション名はクライアントの operation 名から作られる（偽装できる）ことを報告に書く
 - 名前のパターンはエージェントや設定によって異なる。結果が 0 件でも方式が無いとは限らないので、ユーザーに確認する
 
+### R16 ログのラストワンマイル（Logs in context）— 要検証
+`logs.nrql.md`（L01〜L04）が使えるかを確認する。
+```sql
+SELECT percentage(count(*), WHERE trace.id IS NOT NULL) AS with_trace, count(*) AS lines
+FROM Log WHERE entity.name = '{appName}' OR service.name = '{appName}' SINCE 1 day ago
+```
+```sql
+SELECT count(*) FROM Log WHERE message LIKE 'authz-radar %' SINCE 1 day ago
+```
+- `with_trace` が低い → Logs in context が効いていない。L01・L02 は使えない（APM のエージェントのログ転送、またはログの取り込み側でトレース ID を付ける設定を推奨）
+- アクセスログ・WAF / CDN のログがあるか、属性名（パス・ステータス・判定）は何かを、ユーザーに確認する（L02・L03 の `{accessLogFilter}` などを決める）
+- 認可判断のログ行が 0 件で、High-security mode のためにカスタム属性も無い → 計装ライブラリの `log-decisions` を推奨する（L04）
+- 取り込みは **最小限** を推奨する: アクセスログ（パス・クエリ文字列・ステータス・トレース ID）とアプリのセキュリティ関連のログ。個人データはマスクや除外のルールで落とす（R11）
+
 ### R11 送ってしまっている個人データ（プライバシー監査）
 `shared/privacy.md` に基づき、**検知のために送る必要のない個人データ**が入っていないかを確認する。
 `R02` の `keyset()` の結果から、次のような属性名を探す。

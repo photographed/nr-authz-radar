@@ -200,6 +200,22 @@
       "stage": "S3",
       "requires": [],
       "evidence": "strong"
+    },
+    "D24": {
+      "name": "ブラウザのセッションが無いユーザーの API 呼び出し",
+      "name_en": "Users calling APIs without any browser session",
+      "stage": "S1",
+      "requires": [
+        "browser_user"
+      ],
+      "evidence": "anomaly",
+      "join": {
+        "type": "missing_in_second",
+        "key": "enduser.id",
+        "count_key": "api_calls",
+        "min_count": 100,
+        "list_placeholder": "users"
+      }
     }
   }
 }

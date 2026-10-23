@@ -88,6 +88,15 @@ SELECT count(*) FROM Transaction WHERE appName = '{appName}' AND resource.owner_
 FACET name, resource.owner_match SINCE 1 hour ago
 ```
 
+## 2-5b. 認可判断のログ行（任意）
+```yaml
+nr:
+  authz-radar:
+    log-decisions: true    # 拒否と、所有者が違うのに通したときだけ1行（ユーザー ID は入れない）
+```
+- ロガー `io.github.photographed.authzradar.decisions`（INFO）。APM エージェントのログ転送（Logs in context）を有効にすると、トレース ID が付いて New Relic に届く
+- **High-security mode でカスタム属性が送れない場合の代わり**になる（`logs.nrql.md` の L04）。形式は `shared/attribute-spec.md` の「認可判断のログ行」
+
 ## 2-6. GraphQL・WebSocket（STOMP）
 
 ライブラリは、クラスパスに Spring for GraphQL / spring-messaging があれば自動で次を行う（設定は不要）。

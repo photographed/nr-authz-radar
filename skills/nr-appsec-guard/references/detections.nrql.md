@@ -213,6 +213,26 @@ FACET enduser.id
 - 判定: 平均 20件/分以上 かつ 標準偏差が平均の 10% 未満 → `weak`
 - 人間の操作は間隔がばらつく。一定すぎるアクセスは自動化の兆候（AI エージェントとは断定しない）。
 
+### D24 ブラウザのセッションが無いユーザーの API 呼び出し — 段階 S1 — 異常 — 前提 UID, BRW（Browser に `enduser.id`）
+```sql
+-- 1. API を多く呼んでいるユーザー（モバイル・サービス間の呼び出しは除く）
+SELECT count(*) AS api_calls FROM Transaction
+WHERE appName = '{appName}' AND transactionType = 'Web' AND enduser.id IS NOT NULL
+  AND (parent.type IS NULL OR parent.type = 'Browser')
+FACET enduser.id SINCE {since} LIMIT 100
+```
+```sql
+-- 2. そのユーザーのブラウザのセッション数（{users} は 1 の結果のユーザー）
+SELECT uniqueCount(session) AS sessions FROM PageView
+WHERE appName = '{browserAppName}' AND enduser.id IN ({users})
+FACET enduser.id SINCE {since} LIMIT 100
+```
+- **1 に出て 2 に出ないユーザー**（API を `api_calls` 100 回以上呼んでいるのに、ブラウザのセッションが一度も無い）= 画面を経由せず API を直接呼んでいる。D12（割合の変化）を **ユーザー単位の事実** に強めたもの。
+- NRQL では2種類のイベントを突き合わせにくいので、`hunt.py` が2つのクエリを順に実行し、差を計算する。
+- 前提: Browser 側でも **同じ仮名の** `enduser.id` を送っていること。**HMAC の鍵をブラウザの JavaScript に置いてはいけない。** サーバーが仮名を計算して画面に渡し、画面は Browser エージェントの `setUserId` にその値を渡す（API 名は Browser エージェントの版で要確認）。
+- 誤検知: 外部連携用のアカウント、CLI やスクリプトを正当に使う利用者。アカウントの種類で除外する。
+- アラートにはしない（2つのクエリが必要なため）。Hunt で確認する。
+
 ### D14 API キーの異常な使われ方 — 段階 S3 — 異常 — 前提 ATTR（`api.key_id`）, NET
 ```sql
 SELECT uniqueCount(client.asn) AS asns, uniqueCount(client.country) AS countries, count(*)

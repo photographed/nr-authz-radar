@@ -61,3 +61,13 @@ FACET api.protocol, api.operation SINCE 7 days ago LIMIT MAX
 ```
 - GraphQL・SOAP・JSON-RPC・WebSocket の **操作単位** の一覧。U01（トランザクション名の一覧）の代わりに、コード監査の棚卸しと突き合わせる。
 - `api.protocol` が無い場合は R15 で方式を推定する。
+
+### U07 画面から来た拒否と、直接来た拒否 — 段階 S0 ＋ Browser — 要検証
+```sql
+-- 画面（ブラウザ）が受け取った 401 / 403
+SELECT count(*) FROM AjaxRequest
+WHERE appName = '{browserAppName}' AND httpResponseCode IN ('401', '403')
+FACET groupedRequestUrl SINCE {since} LIMIT 20
+```
+- U05（サーバー側の 401 / 403 の総数）と比べる。**サーバーの拒否の方が大幅に多い API は、画面以外（直接の呼び出し）からの拒否が多い。**
+- 属性名（`httpResponseCode` / `statusCode`）と型は Browser エージェントの版で異なる可能性がある。

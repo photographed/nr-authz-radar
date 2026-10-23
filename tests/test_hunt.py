@@ -118,6 +118,33 @@ class RunTest(unittest.TestCase):
         self.assertIn("## Evidence", en)
         self.assertIn("never called attacks", en)
 
+    def test_users_without_browser_sessions(self):
+        calls = {"data": None}
+
+        def transport(endpoint, api_key, body):
+            nrql = body["variables"]["nrql"]
+            if "FROM Transaction" in nrql:
+                rows = [{"facet": "u_aaaa1111bbbb2222", "api_calls": 900},   # scripted, no browser
+                        {"facet": "u_cccc3333dddd4444", "api_calls": 400},   # normal web user
+                        {"facet": "u_eeee5555ffff6666", "api_calls": 20}]    # below the threshold
+            else:
+                calls["data"] = nrql
+                rows = [{"facet": "u_cccc3333dddd4444", "sessions": 12}]
+            return {"data": {"actor": {"account": {"nrql": {"results": rows}}}}}
+
+        items = hunt.plan("S1", {"browser_user"}, {"D24"}, dict(VALUES, browserAppName="shop-web"))
+        hunt.run(items, 1, "x", "k", transport, pause=0)
+        d24 = items[0]
+        self.assertEqual(d24["new_count"], 1)
+        self.assertTrue(hunt.has_hit(d24))
+        self.assertIn("'u_aaaa1111bbbb2222'", calls["data"])        # only heavy users are looked up
+        self.assertNotIn("u_eeee5555ffff6666", calls["data"])
+
+    def test_d24_needs_browser_user_ids(self):
+        items = {i["id"]: i for i in hunt.plan("S3", {"browser_dt"}, None, dict(VALUES, browserAppName="w"))}
+        self.assertEqual(items["D24"]["status"], "skipped")
+        self.assertIn("browser_user", items["D24"]["reason"])
+
     def test_summary_is_small(self):
         rows = [{"facet": f"/api/v1/x{i}", "count": i, "request.uri": f"/api/v1/orders/{i}" * 5} for i in range(500)]
         items = self.run_items({"D03": {"match": "uniqueCount(request.uri)", "rows": rows}}, only={"D03"})

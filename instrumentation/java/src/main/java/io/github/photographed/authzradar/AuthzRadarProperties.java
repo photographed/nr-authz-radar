@@ -26,6 +26,12 @@ public class AuthzRadarProperties {
     /** What {@code @CheckOwnership} does on a mismatch: ENFORCE (deny) or OBSERVE (record only). */
     private CheckOwnership.OwnershipMode ownershipMode = CheckOwnership.OwnershipMode.ENFORCE;
 
+    /**
+     * Write a structured log line for denials and allowed owner mismatches (no user IDs).
+     * For high-security mode, where custom attributes cannot be sent, and as the logs last mile.
+     */
+    private boolean logDecisions = false;
+
     /** Authorities allowed to read other owners' resources, e.g. {@code SCOPE_admin:read}. */
     private List<String> bypassAuthorities = new ArrayList<>();
 
@@ -37,6 +43,8 @@ public class AuthzRadarProperties {
     public void setHmacKey(String hmacKey) { this.hmacKey = hmacKey; }
     public CheckOwnership.OwnershipMode getOwnershipMode() { return ownershipMode; }
     public void setOwnershipMode(CheckOwnership.OwnershipMode ownershipMode) { this.ownershipMode = ownershipMode; }
+    public boolean isLogDecisions() { return logDecisions; }
+    public void setLogDecisions(boolean logDecisions) { this.logDecisions = logDecisions; }
     public List<String> getBypassAuthorities() { return bypassAuthorities; }
     public void setBypassAuthorities(List<String> bypassAuthorities) { this.bypassAuthorities = bypassAuthorities; }
 }
