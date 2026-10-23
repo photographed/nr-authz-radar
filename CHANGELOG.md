@@ -7,6 +7,20 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-23
+
+### Added
+- アラートのカタログ `shared/alerts.json`（10種類）と、アラートにしない検知の理由（9種類）。検知の全件がどちらかに入っていることをテストで確認
+- `scripts/gen_alerts.py`: **現在の段階とデータソースで動くアラートだけ**を Terraform として生成し、生成しなかったものを `SKIPPED.md`（何があれば追加できるか）に出す
+- Terraform のテンプレート: ポリシー、Slack の通知チャンネル（CRITICAL / HIGH を分離）、Alert Workflow
+- Workflow Automation の下書き `templates/workflow-automation/security-triage.yaml`（Autopilot / iRCA のオン・オフを入力値で切り替える。**未検証**）
+- Autopilot のプロンプト `templates/autopilot/security-prompt.md`、Slack 通知の形式 `templates/slack/security-alert.md`
+- New Relic Knowledge 用のランブック6本 `templates/knowledge-runbooks/`（IDOR、偵察、SQLi、認証攻撃、自動化、RCE）
+
+### Known limitations
+- Terraform は `terraform fmt` による構文チェックのみ。provider を取得できない環境のため `terraform validate` は未実施
+- Workflow Automation のアクション名・入出力・式の書き方の一部は公式テンプレートと未照合
+
 ## [0.5.0] - 2026-10-23
 
 ### Added
