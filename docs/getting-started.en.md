@@ -27,7 +27,7 @@ You ── read the report, review the files (configuration, patches) and **appl
 |---|---|---|
 | `skills/` | Instructions for Claude: `api-authz-review` (code review) and `nr-appsec-guard` (readiness, detection, investigation, instrumentation advice and alert generation with New Relic) | Claude |
 | `shared/` | Shared specifications (attributes, goals and stages, data sources, API styles, ranking, privacy, standards mapping). Written in Japanese; Claude reads them in any language | Claude and people |
-| `scripts/` | Deterministic tools: `risk_score.py` (ranking), `gen_alerts.py` (alerts), `hunt.py` (detections via NerdGraph, no AI), `inventory_java.py` (endpoint inventory), `catalog.py` (print only the sections you need), `gen_xml_candidates.py` (XML candidates), `attack_layer.py` (ATT&CK Navigator layer) | **Run by Claude** (you can run them too) |
+| `scripts/` | Deterministic tools: `risk_score.py` (ranking), `gen_alerts.py` (alerts), `hunt.py` (detections via NerdGraph, no AI), `inventory_{java,php,python,node,ruby,go}.py` (endpoint inventory), `catalog.py` (print only the sections you need), `gen_xml_candidates.py` (XML candidates), `attack_layer.py` (ATT&CK Navigator layer) | **Run by Claude** (you can run them too) |
 | `templates/` | Templates for New Relic (Terraform, Workflow Automation, Slack, Autopilot prompt, runbooks) | Filled in by Claude → **applied by you** |
 | `instrumentation/` | **Code you add to your application**: a Java library, and small files for Python, Node.js, Ruby, Go, PHP and .NET | **Developers** (Claude does not run it; it proposes patches that use it) |
 | `examples/`, `docs/samples/` | A sample application, and real outputs and example reports | People |

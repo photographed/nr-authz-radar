@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-27
+
+### Added
+- **コード監査（棚卸し）を全言語に拡大**。`scripts/inventory_python.py`（Flask/FastAPI/DRF）、`inventory_node.py`（Express/Koa/Fastify ＋ Next.js のファイルベースルート）、`inventory_ruby.py`（Rails/Sinatra ＋ `routes.rb`）、`inventory_go.py`（net/http・chi・gin・echo）。いずれも認可（認証と区別）と本体の候補（IDOR・SQLi・コマンド実行・安全でないデシリアライズ・mass assignment）を出す。`api-authz-review` の Step 1c〜1f に追加。ソースのみのフィクスチャと計 19 件のテスト
+- **攻撃検知の言語カバー**: D06（DB 構文エラー）と D21（RCE／デシリアライズ）に Node.js・Python・Ruby・Go・.NET のパターンを追加（SQL Server `Incorrect syntax near`、MySQL `Error 1064`、psycopg/pg の構文エラークラス、node-serialize、.NET `BinaryFormatter`、Python `pickle`/PyYAML、Ruby `Psych`）。偽陽性を抑えるためメッセージ中心、言語ごとの出方を注記
+
+### Note
+- 各 inventory は正規表現ベースで、拾えない形（NestJS・tRPC・Django `urls.py` の一部・gRPC 等）は各 Step に明記。候補であって断定ではない
+
+
 ## [0.14.0] - 2026-10-27
 
 ### Added
