@@ -4,7 +4,8 @@
     "IPA は「安全なウェブサイトの作り方 改訂第7版」の節番号。原文で確認すること。",
     "OAT と AI エージェントの結び付けは本プラグインの分析であり、OWASP の公式な位置付けではない。",
     "iast は New Relic Security Agent（IAST）で裏付けに使える検出カテゴリ。認可の不備（F2〜F5）は IAST の対象外。",
-    "F9 と IAST の「Remote Code Execution」の対応は推定（IAST の一覧にコマンドインジェクションは明記されていない）。デモアプリで確認する。"
+    "F9 と IAST の「Remote Code Execution」の対応は推定（IAST の一覧にコマンドインジェクションは明記されていない）。デモアプリで確認する。",
+    "attack は MITRE ATT&CK（Enterprise, v20.0）の技術 ID。ATT&CK は攻撃者の行動の分類で、Web アプリの脆弱性ほど細かくないため、コード監査の Finding の多くは T1190 になる。対応付けは本プラグインの解釈。ID と名前は MITRE の公式データ（attack-stix-data）と照合済み。"
   ],
   "findings": {
     "F1": {
@@ -27,7 +28,10 @@
       "ipa": [
         "1.11"
       ],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190"
+      ]
     },
     "F2": {
       "title": "スコープ・権限チェックが無い",
@@ -48,7 +52,10 @@
       "ipa": [
         "1.11"
       ],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190"
+      ]
     },
     "F3": {
       "title": "スコープ・権限が不適切",
@@ -69,7 +76,10 @@
       "ipa": [
         "1.11"
       ],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190"
+      ]
     },
     "F4": {
       "title": "IDOR / BOLA（所有者照合が無い）",
@@ -89,7 +99,10 @@
       "ipa": [
         "1.11"
       ],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190"
+      ]
     },
     "F5": {
       "title": "機能レベルの認可不備（BFLA）",
@@ -109,7 +122,11 @@
       "ipa": [
         "1.11"
       ],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190",
+        "T1098"
+      ]
     },
     "F6": {
       "title": "Mass Assignment",
@@ -127,7 +144,11 @@
       ],
       "oat": [],
       "ipa": [],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190",
+        "T1098"
+      ]
     },
     "F7": {
       "title": "SQL インジェクション",
@@ -147,6 +168,9 @@
       ],
       "iast": [
         "SQL Injection"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "F8": {
@@ -168,7 +192,10 @@
       ],
       "oat": [],
       "ipa": [],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1190"
+      ]
     },
     "F9": {
       "title": "OS コマンドインジェクション",
@@ -188,6 +215,10 @@
       ],
       "iast": [
         "Remote Code Execution"
+      ],
+      "attack": [
+        "T1190",
+        "T1059"
       ]
     },
     "F10": {
@@ -206,6 +237,10 @@
       "ipa": [],
       "iast": [
         "Insecure Deserialization"
+      ],
+      "attack": [
+        "T1190",
+        "T1059"
       ]
     },
     "F11": {
@@ -226,7 +261,10 @@
       ],
       "oat": [],
       "ipa": [],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1499.003"
+      ]
     },
     "F12": {
       "title": "WebSocket の防御不足（Origin 確認・接続中の権限確認）",
@@ -247,7 +285,11 @@
       ],
       "oat": [],
       "ipa": [],
-      "iast": []
+      "iast": [],
+      "attack": [
+        "T1185",
+        "T1550.004"
+      ]
     }
   },
   "detections": {
@@ -269,6 +311,9 @@
       "oat": [],
       "ipa": [
         "1.11"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D02": {
@@ -291,6 +336,9 @@
       ],
       "ipa": [
         "1.11"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D03": {
@@ -313,6 +361,10 @@
       ],
       "ipa": [
         "1.11"
+      ],
+      "attack": [
+        "T1119",
+        "T1190"
       ]
     },
     "D04": {
@@ -332,7 +384,11 @@
         "OAT-014",
         "OAT-018"
       ],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1595.003",
+        "T1595.002"
+      ]
     },
     "D05": {
       "title": "スコープ不足・管理系への到達",
@@ -353,6 +409,9 @@
       "oat": [],
       "ipa": [
         "1.11"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D06": {
@@ -373,6 +432,10 @@
       ],
       "ipa": [
         "1.1"
+      ],
+      "attack": [
+        "T1190",
+        "T1595.002"
       ]
     },
     "D07": {
@@ -392,6 +455,9 @@
       ],
       "ipa": [
         "1.1"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D08": {
@@ -409,6 +475,9 @@
       "oat": [],
       "ipa": [
         "1.1"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D09": {
@@ -428,6 +497,9 @@
       ],
       "ipa": [
         "1.1"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D10": {
@@ -449,7 +521,11 @@
         "OAT-007",
         "OAT-008"
       ],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1110.004",
+        "T1110.003"
+      ]
     },
     "D11": {
       "title": "少数アカウント × 多数のネットワーク",
@@ -471,7 +547,11 @@
         "OAT-008",
         "OAT-011"
       ],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1110.004",
+        "T1090"
+      ]
     },
     "D12": {
       "title": "ブラウザを経由しない API 直叩き",
@@ -487,7 +567,10 @@
       "oat": [
         "OAT-011"
       ],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1119"
+      ]
     },
     "D13": {
       "title": "機械的に一定の間隔",
@@ -503,7 +586,10 @@
       "oat": [
         "OAT-011"
       ],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1119"
+      ]
     },
     "D14": {
       "title": "API キーの異常な使われ方",
@@ -518,7 +604,11 @@
         "API2"
       ],
       "oat": [],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1550.001",
+        "T1078"
+      ]
     },
     "D15": {
       "title": "有効期限の長すぎるトークン",
@@ -537,6 +627,9 @@
       "oat": [],
       "ipa": [
         "1.4"
+      ],
+      "attack": [
+        "T1550.001"
       ]
     },
     "D17": {
@@ -552,7 +645,10 @@
       ],
       "owasp_api": [],
       "oat": [],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1190"
+      ]
     },
     "D18": {
       "title": "変更相関",
@@ -565,7 +661,8 @@
       ],
       "owasp_api": [],
       "oat": [],
-      "ipa": []
+      "ipa": [],
+      "attack": []
     },
     "D20": {
       "title": "見たことのない外部への通信",
@@ -584,7 +681,11 @@
         "API7"
       ],
       "oat": [],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1071.001",
+        "T1105"
+      ]
     },
     "D21": {
       "title": "RCE の試みで出る例外",
@@ -607,6 +708,10 @@
       ],
       "ipa": [
         "1.2"
+      ],
+      "attack": [
+        "T1190",
+        "T1059"
       ]
     },
     "D22": {
@@ -629,6 +734,9 @@
       "oat": [],
       "ipa": [
         "1.11"
+      ],
+      "attack": [
+        "T1190"
       ]
     },
     "D23": {
@@ -653,6 +761,9 @@
       ],
       "ipa": [
         "1.11"
+      ],
+      "attack": [
+        "T1119"
       ]
     },
     "D24": {
@@ -669,7 +780,10 @@
       "oat": [
         "OAT-011"
       ],
-      "ipa": []
+      "ipa": [],
+      "attack": [
+        "T1119"
+      ]
     }
   },
   "usage": {
@@ -698,6 +812,109 @@
       ],
       "oat": [],
       "ipa": []
+    }
+  },
+  "attack_version": "20.0",
+  "attack_techniques": {
+    "T1059": {
+      "name": "Command and Scripting Interpreter",
+      "tactics": [
+        "execution"
+      ]
+    },
+    "T1071.001": {
+      "name": "Web Protocols",
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    "T1078": {
+      "name": "Valid Accounts",
+      "tactics": [
+        "stealth",
+        "persistence",
+        "privilege-escalation",
+        "initial-access"
+      ]
+    },
+    "T1090": {
+      "name": "Proxy",
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    "T1098": {
+      "name": "Account Manipulation",
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    "T1105": {
+      "name": "Ingress Tool Transfer",
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    "T1110.003": {
+      "name": "Password Spraying",
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    "T1110.004": {
+      "name": "Credential Stuffing",
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    "T1119": {
+      "name": "Automated Collection",
+      "tactics": [
+        "collection"
+      ]
+    },
+    "T1185": {
+      "name": "Browser Session Hijacking",
+      "tactics": [
+        "collection"
+      ]
+    },
+    "T1190": {
+      "name": "Exploit Public-Facing Application",
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    "T1499.003": {
+      "name": "Application Exhaustion Flood",
+      "tactics": [
+        "impact"
+      ]
+    },
+    "T1550.001": {
+      "name": "Application Access Token",
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    "T1550.004": {
+      "name": "Web Session Cookie",
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    "T1595.002": {
+      "name": "Vulnerability Scanning",
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    "T1595.003": {
+      "name": "Wordlist Scanning",
+      "tactics": [
+        "reconnaissance"
+      ]
     }
   }
 }

@@ -120,7 +120,7 @@ steps:
         3) Never state that an AI agent is attacking; report "automation-like behaviour" with the evidence.
         4) Do not include raw user IDs, IP addresses or e-mail addresses; use counts and pseudonymous IDs.
         5) Say "unknown" when data is missing (sampling, retention, missing attributes) and what would fill the gap.
-        6) Link the runbook for the detection ID in the issue title under ${{ .workflowInputs.runbookBaseUrl }}.
+        6) Link the runbook for the detection ID in the issue title under ${{ .workflowInputs.runbookBaseUrl }}. If the alert condition description lists ATT&CK technique IDs, include them as-is; do not add techniques by guessing.
     next: notify
 
   - name: notify

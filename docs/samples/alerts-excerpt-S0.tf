@@ -6,7 +6,7 @@ resource "newrelic_nrql_alert_condition" "d06" {
   policy_id                    = newrelic_alert_policy.authz_radar.id
   type                         = "static"
   name                         = "[authz-radar] D06 DB 構文エラー"
-  description                  = "nr-authz-radar D06 / stage S0 / strong"
+  description                  = "nr-authz-radar D06 / stage S0 / strong / ATT&CK T1190,T1595.002"
   runbook_url                  = "${var.runbook_base_url}/sqli.md"
   enabled                      = true
   violation_time_limit_seconds = 86400

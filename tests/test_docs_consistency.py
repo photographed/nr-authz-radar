@@ -114,12 +114,25 @@ class StandardsMappingTest(unittest.TestCase):
 
     def test_label_formats(self):
         pats = {"cwe": r"CWE-\d+", "asvs": r"V\d{1,2}", "owasp_top10": r"A\d{2}",
-                "owasp_api": r"API\d{1,2}", "oat": r"OAT-\d{3}", "ipa": r"\d+\.\d+"}
+                "owasp_api": r"API\d{1,2}", "oat": r"OAT-\d{3}", "ipa": r"\d+\.\d+", "attack": r"T\d{4}(\.\d{3})?"}
         for group in ("findings", "detections", "usage"):
             for key, entry in self.std[group].items():
                 for field, pat in pats.items():
-                    for v in entry[field]:
+                    for v in entry.get(field, []):
                         self.assertRegex(v, f"^{pat}$", f"{group}.{key}.{field}={v}")
+
+    def test_attack_techniques_are_known_and_named(self):
+        techniques = self.std["attack_techniques"]
+        self.assertEqual(self.std["attack_version"], "20.0")
+        for group in ("findings", "detections"):
+            for key, entry in self.std[group].items():
+                self.assertIn("attack", entry, f"{group}.{key} has no ATT&CK mapping (use [] if none)")
+                for t in entry["attack"]:
+                    self.assertIn(t, techniques, f"{group}.{key}: {t} is not in attack_techniques")
+        for t, meta in techniques.items():
+            self.assertTrue(meta["name"] and meta["tactics"], t)
+        used = {t for g in ("findings", "detections") for e in self.std[g].values() for t in e["attack"]}
+        self.assertEqual(used, set(techniques), "attack_techniques should list exactly the techniques in use")
 
     def test_usage_mapping_ids_exist(self):
         self.assertLessEqual(set(self.std["usage"]), _defined("U", "usage.nrql.md"))

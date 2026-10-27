@@ -66,11 +66,16 @@ PLACEHOLDERS = {"{appName}": "${var.app_name}", "{bypassScopePattern}": "${var.b
 PAGING_LEVELS = ("evidence", "strong")
 
 
+STANDARDS = ROOT / "shared" / "standards.json"
+
+
 def load() -> tuple[dict, dict]:
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
     detections = json.loads(DETECTIONS.read_text(encoding="utf-8"))
+    standards = json.loads(STANDARDS.read_text(encoding="utf-8"))["detections"]
     for a in catalog["alerts"]:
         a["evidence"] = detections["detections"][a["id"]]["evidence"]
+        a["attack"] = standards[a["id"]].get("attack", [])
     return catalog, detections
 
 
@@ -105,6 +110,12 @@ def thresholds(alert: dict) -> list[tuple[str, dict]]:
     return [("warning", alert.get("warning") or alert["critical"])]
 
 
+def description(alert: dict) -> str:
+    """Searchable by SOC tooling: detection, stage, evidence level and ATT&CK techniques."""
+    text = f"nr-authz-radar {alert['id']} / stage {alert['stage']} / {alert['evidence']}"
+    return text + (" / ATT&CK " + ",".join(alert["attack"]) if alert.get("attack") else "")
+
+
 def condition(alert: dict) -> str:
     rid = alert["id"].lower()
     window = alert["window_seconds"]
@@ -115,7 +126,7 @@ def condition(alert: dict) -> str:
         f"  policy_id                    = newrelic_alert_policy.{policy}.id",
         f'  type                         = "{alert["type"]}"',
         f'  name                         = {hcl_string("[authz-radar] " + alert["id"] + " " + alert["name"])}',
-        f'  description                  = {hcl_string("nr-authz-radar " + alert["id"] + " / stage " + alert["stage"] + " / " + alert["evidence"])}',
+        f'  description                  = {hcl_string(description(alert))}',
         f'  runbook_url                  = "${{var.runbook_base_url}}/{alert["runbook"]}"',
         "  enabled                      = true",
         "  violation_time_limit_seconds = 86400",

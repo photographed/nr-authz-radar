@@ -281,26 +281,41 @@ python3 scripts/catalog.py index --stage S2                                     
 | **CWE** | 脆弱性の分類番号。SAST や脆弱性管理ツールと結果を突き合わせられる | ◎ 全 Finding |
 | **OWASP Automated Threats（OAT）** | 自動化された攻撃の振る舞いの分類。AI エージェントによる攻撃の検知（D02〜D13）に付与 | ○ 該当する検知のみ |
 | **IPA「安全なウェブサイトの作り方」** | 日本で最も参照される Web アプリの指針。1.1 SQL インジェクション、1.4 セッション管理、1.11 アクセス制御や認可制御の欠落 | △ 該当する節のみ |
+| **MITRE ATT&CK v20.0（Enterprise）** | 攻撃者の行動の分類。SOC・脅威インテリジェンスと共通の言葉で話せる。16 の技術に対応（下記） | ○ 全 Finding・検知（D18 を除く） |
 
 コード監査の Finding との対応:
 
-| Finding | CWE | ASVS 5.0 | OWASP | IPA |
-|---|---|---|---|---|
-| F1 認証なしで公開されている API | CWE-306 | V6, V8 | A07, A01, API2 | 1.11 |
-| F2 スコープ・権限チェックが無い | CWE-862 | V8, V10 | A01, API5 | 1.11 |
-| F3 スコープ・権限が不適切 | CWE-863 | V8, V10 | A01, API5 | 1.11 |
-| F4 IDOR / BOLA（所有者照合が無い） | CWE-639 | V8 | A01, API1 | 1.11 |
-| F5 機能レベルの認可不備（BFLA） | CWE-285 | V8 | A01, API5 | 1.11 |
-| F6 Mass Assignment | CWE-915 | V15 | A06, API3 | — |
-| F7 SQL インジェクション | CWE-89 | V1 | A05 | 1.1 |
-| F8 過剰なデータ露出・上限のない取得 | CWE-213, CWE-770 | V14, V2 | A06, API3, API4 | — |
-| F9 OS コマンドインジェクション | CWE-78 | V1 | A05 | 1.2 |
-| F10 安全でないデシリアライズ | CWE-502 | V1 | A08 | — |
-| F11 GraphQL の防御不足（introspection・深さ・エイリアス） | CWE-770, CWE-200 | V4 | A06, API4, API8 | — |
-| F12 WebSocket の防御不足（Origin 確認・接続中の権限確認） | CWE-1385, CWE-613 | V4 | A01, A07, API2, API8 | — |
+| Finding | CWE | ASVS 5.0 | OWASP | IPA | ATT&CK |
+|---|---|---|---|---|---|
+| F1 認証なしで公開されている API | CWE-306 | V6, V8 | A07, A01, API2 | 1.11 | T1190 |
+| F2 スコープ・権限チェックが無い | CWE-862 | V8, V10 | A01, API5 | 1.11 | T1190 |
+| F3 スコープ・権限が不適切 | CWE-863 | V8, V10 | A01, API5 | 1.11 | T1190 |
+| F4 IDOR / BOLA（所有者照合が無い） | CWE-639 | V8 | A01, API1 | 1.11 | T1190 |
+| F5 機能レベルの認可不備（BFLA） | CWE-285 | V8 | A01, API5 | 1.11 | T1190, T1098 |
+| F6 Mass Assignment | CWE-915 | V15 | A06, API3 | — | T1190, T1098 |
+| F7 SQL インジェクション | CWE-89 | V1 | A05 | 1.1 | T1190 |
+| F8 過剰なデータ露出・上限のない取得 | CWE-213, CWE-770 | V14, V2 | A06, API3, API4 | — | T1190 |
+| F9 OS コマンドインジェクション | CWE-78 | V1 | A05 | 1.2 | T1190, T1059 |
+| F10 安全でないデシリアライズ | CWE-502 | V1 | A08 | — | T1190, T1059 |
+| F11 GraphQL の防御不足（introspection・深さ・エイリアス） | CWE-770, CWE-200 | V4 | A06, API4, API8 | — | T1499.003 |
+| F12 WebSocket の防御不足（Origin 確認・接続中の権限確認） | CWE-1385, CWE-613 | V4 | A01, A07, API2, API8 | — | T1185, T1550.004 |
 
 検知（D01〜D23）の対応は `shared/standards.json` を参照してください。
 OAT と AI エージェントの結び付けは本プラグインの分析であり、OWASP の公式な位置付けではありません。
+
+#### MITRE ATT&CK
+
+- **対応表は本プラグインの解釈です**（MITRE の公式な対応ではない）。技術の ID は MITRE の公式データ（attack-stix-data v20.0）で、存在すること・廃止されていないことを確認済み
+- ATT&CK は攻撃者の行動の分類で、アプリの脆弱性の種類までは区別しない。**IDOR・SQLi・認可不備はすべて T1190（Exploit Public-Facing Application）** になる。脆弱性の種類は CWE・OWASP の番号で区別する
+- 主な対応: 列挙・大量取得（D03・D12・D13・D23・D24）→ T1119 Automated Collection、スキャン（D04・D06）→ T1595 Active Scanning、クレデンシャルスタッフィング（D10・D11）→ T1110.004、盗まれたトークンの利用（D14・D15）→ T1550.001、RCE の兆候（D20・D21）→ T1059・T1105・T1071.001
+- 自社の段階とデータソースで **何に気づけるか** を ATT&CK Navigator で見られる:
+
+```bash
+python3 scripts/attack_layer.py --stage S2 --sources spans --findings --out .authz-radar/attack-layer.json
+# → https://mitre-attack.github.io/attack-navigator/ の "Open Existing Layer" で読み込む
+```
+
+色は 3 = 証拠、2 = 強い兆候、1 = 異常またはコード監査の Finding。**色が付いていない技術は検知できないという意味ではなく、本プラグインの対象外**です（初期アクセス以外の多くは EDR・SIEM の領域）。
 
 ### 対象外とした規格
 

@@ -53,6 +53,7 @@ def standards_label(ftype: str) -> str:
     parts += [f"ASVS {c}" for c in s.get("asvs", [])]
     parts += s.get("owasp_top10", []) + s.get("owasp_api", []) + s.get("oat", [])
     parts += [f"IPA {n}" for n in s.get("ipa", [])]
+    parts += [f"ATT&CK {t}" for t in s.get("attack", [])]
     return " / ".join(parts)
 
 

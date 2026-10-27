@@ -7,7 +7,7 @@ Workflow Automation（`security-triage.yaml` の `notify`）と、手動で投�
 *[authz-radar] CRITICAL* D01 IDOR 成功の証拠 / order-api
 
 *今のデータでわかること*
-• 発火した条件: D01（段階 S2）。`GET /api/v1/orders/{id}` で owner_match=false かつ allow が 12 件（直近5分）
+• 発火した条件: D01（段階 S2・ATT&CK T1190）。`GET /api/v1/orders/{id}` で owner_match=false かつ allow が 12 件（直近5分）
 • 対象: 仮名化ユーザー 1 件（u_3f9a…）
 • 直近2時間のデプロイ: v2.14.0（38 分前）
 • Autopilot: 「デプロイ直後から発生。認可チェックの欠落の可能性」／ iRCA: デプロイが有力な原因
@@ -22,6 +22,7 @@ Workflow Automation（`security-triage.yaml` の `notify`）と、手動で投�
 ## ルール
 - 生のユーザー ID・IP・メールアドレスを書かない。
 - 判定できなかったことは「判定不能（理由）」として必ず書く。
+- ATT&CK の技術 ID はアラート条件の説明（`description`）に入っている。SOC に渡すときの共通語として添える（対応は本プラグインの解釈）。
 - **CRITICAL は証拠の強さが「証拠」の検知だけ**（D01・D07）。メンション付きのチャンネルに送り、Autopilot も呼ぶ。
 - HIGH は「強い兆候」。静かなチャンネルに送る。導入直後（`learning_mode = true`）は通知しない。
 - 「異常」は通知しない（日次で確認する）。

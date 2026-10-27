@@ -7,6 +7,14 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-27
+
+### Added
+- **MITRE ATT&CK v20.0（Enterprise）との対応**: 全 Finding（F1〜F12）と検知（D18 以外）に技術 ID を付与（`shared/standards.json`）。16 技術の ID は MITRE の公式データ（attack-stix-data）で、存在すること・廃止されていないことを確認済み。対応は本プラグインの解釈
+- `scripts/attack_layer.py`: 段階とデータソースで実行できる検知から ATT&CK Navigator のレイヤーを作る（3 = 証拠、2 = 強い兆候、1 = 異常・コード監査の Finding）
+- ランキングの Standards 列と、生成するアラート条件の説明に ATT&CK の ID を表示
+- テスト: ID の形式・辞書との一致・バージョン、レイヤーの形と段階による絞り込み
+
 ## [0.11.0] - 2026-10-23
 
 ### Added

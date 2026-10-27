@@ -88,7 +88,13 @@ The ranking is computed by a script, so the same input always gives the same ord
 |---|---|---|---|
 | OWASP Top 10:2025 | A01 Broken Access Control, A09 Logging and Alerting Failures | A05 (SQL / OS command injection, RCE signals), A07, A02, A06, A08 (deserialization), A10 | A03, A04 |
 | OWASP API Top 10:2023 | API1 BOLA, API5 BFLA | API2, API3, API4, API6, API8, API9 | API7 SSRF, API10 |
-| Others | CWE on every finding | ASVS 5.0 (chapter level), OWASP OAT (automation), IPA "安全なウェブサイトの作り方", CIS Controls v8 (reference only) | CIS Benchmarks, OWASP LLM / Agentic Top 10 (they protect your own AI apps, the opposite direction) |
+| Others | CWE on every finding | ASVS 5.0 (chapter level), OWASP OAT (automation), IPA "安全なウェブサイトの作り方", CIS Controls v8 (reference only), MITRE ATT&CK v20.0 (all findings and detections; plugin's interpretation) | CIS Benchmarks, OWASP LLM / Agentic Top 10 (they protect your own AI apps, the opposite direction) |
+
+MITRE ATT&CK: IDOR, SQLi and broken authorization all map to T1190 (ATT&CK does not distinguish vulnerability classes; use CWE / OWASP for that). Enumeration maps to T1119, scanning to T1595, credential stuffing to T1110.004, stolen tokens to T1550.001. To see what you can notice at your stage in ATT&CK Navigator:
+
+```bash
+python3 scripts/attack_layer.py --stage S2 --sources spans --findings --out .authz-radar/attack-layer.json
+```
 
 Details (Japanese): the "対応範囲" section of [README.md](README.md) and [`shared/standards.json`](shared/standards.json).
 
@@ -100,7 +106,7 @@ Details (Japanese): the "対応範囲" section of [README.md](README.md) and [`s
 
 ## Status
 
-Version **0.11.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
+Version **0.12.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
 
 ## Language
 
