@@ -120,6 +120,11 @@ WHERE appName = '{appName}' AND (
   OR error.message LIKE '%ORA-00933%' OR error.message LIKE '%ORA-01756%'
   OR error.message LIKE '%SQLSTATE[42000]%' OR error.message LIKE '%SQLSTATE[42601]%'
   OR error.message LIKE '%unrecognized token%'
+  OR error.message LIKE '%Incorrect syntax near%'            -- SQL Server (.NET)
+  OR error.message LIKE '%Error 1064%'                       -- MySQL (Go go-sql-driver ほか)
+  OR error.class IN ('psycopg2.errors.SyntaxErrorOrAccessRuleViolation',  -- Python/psycopg
+                     'PG::SyntaxError',                       -- Ruby/pg
+                     'pymysql.err.ProgrammingError')          -- Python/PyMySQL
 )
 FACET transactionName, error.class SINCE {since}
 ```
@@ -128,6 +133,12 @@ FACET transactionName, error.class SINCE {since}
   直近で**初めて出現したグループ**かどうかを `SINCE {baseline}` の結果と比べて判定する。
 - 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
 - PHP: PDO の例外は SQLSTATE がメッセージに入る（MySQL `42000`、PostgreSQL `42601`、SQLite は `syntax error` / `unrecognized token`）。Laravel では `error.class` が `Illuminate\Database\QueryException`（DB のエラー全般）になるので、**PHP ではメッセージで判定する**。High-security mode の PHP アプリでは D06 は使えない
+- 言語ごとの構文エラーのメッセージ（上のパターンで拾える）:
+  - **Node.js**: `pg` 「syntax error at or near」(→ `%syntax error%`)、`mysql2` 「You have an error in your SQL syntax」、`sqlite3` 「near "…": syntax error」。ORM（Sequelize/Prisma/Knex）は汎用クラスで包むので **メッセージで判定**
+  - **Python**: `psycopg` / Django は `ProgrammingError`、`sqlite3.OperationalError`、PyMySQL。メッセージは「syntax error at or near」「near "…": syntax error」
+  - **Ruby**: `ActiveRecord::StatementInvalid` が中身（`PG::SyntaxError`・`Mysql2::Error`・`SQLite3::SQLException`）を包む。メッセージで判定
+  - **Go**: `lib/pq` 「pq: syntax error at or near」(→ `%syntax error%`)、`go-sql-driver/mysql` 「Error 1064」
+  - **.NET**: `SqlException` 「Incorrect syntax near」、`Npgsql.PostgresException` 「42601: syntax error」(→ `%syntax error%`)
 
 ### D07 注入らしい SQL 文 — 段階 S0 — 証拠 — 前提 SPAN — 要検証
 ```sql
@@ -317,6 +328,12 @@ WHERE appName = '{appName}' AND (
   OR error.message LIKE '%unserialize(): Error at offset%'
   OR error.message LIKE '%__PHP_Incomplete_Class%'
   OR error.message LIKE '%phar://%'
+  OR error.message LIKE '%_$$ND_FUNC$$_%'                    -- Node.js node-serialize
+  OR error.message LIKE '%BinaryFormatter%'                  -- .NET
+  OR error.class IN ('pickle.UnpicklingError', '_pickle.UnpicklingError',  -- Python pickle
+                     'yaml.constructor.ConstructorError',    -- Python PyYAML（安全でない load）
+                     'Psych::DisallowedClass',               -- Ruby YAML.load
+                     'System.Runtime.Serialization.SerializationException')  -- .NET
 )
 FACET transactionName, error.class SINCE {baseline}
 ```
@@ -326,6 +343,12 @@ FACET transactionName, error.class SINCE {baseline}
   - `strong`: 同じトランザクションで1時間に5件以上、または異なる種類の例外が2つ以上、または D20 と同時
   - `weak`: `first_seen` が直近 `{since}` 以内（初めて出た）
 - PHP: 不正なデータの `unserialize()`（Laravel では警告が `ErrorException` になる）、オブジェクトの復元失敗（`__PHP_Incomplete_Class`）、`phar://` を使ったデシリアライズの試み。
+- 言語ごとの安全でないデシリアライズ／コマンド実行:
+  - **Node.js**: `node-serialize` の `_$$ND_FUNC$$_`、`child_process` の失敗。プロトタイプ汚染は例外になりにくいので D20（新しい外部通信）と併せて見る
+  - **Python**: `pickle` / PyYAML の `yaml.load`（`ConstructorError`）、`subprocess` の失敗。`os.system`/`eval` は例外が出にくい
+  - **Ruby**: `Marshal.load`、`YAML.load`（`Psych::DisallowedClass`）、`Kernel#system`/バッククオート
+  - **.NET**: `BinaryFormatter`（既定で危険）、`System.Runtime.Serialization.SerializationException`、`System.Diagnostics.Process`
+  - **Go**: `os/exec` は特有の例外を残しにくい。D20 と D21 の相関（同時刻の新しい外部通信）で判断する
 - 誤検知: 正当な入力ミスでも `SpelEvaluationException` 等は出る。平常時の件数（`{baseline}`）と比べる。
 - 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
 

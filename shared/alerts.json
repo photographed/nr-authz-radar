@@ -86,7 +86,7 @@
       "runbook": "sqli.md",
       "type": "static",
       "window_seconds": 300,
-      "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.sql.SQLSyntaxErrorException', 'org.springframework.jdbc.BadSqlGrammarException', 'org.hibernate.exception.SQLGrammarException') OR error.message LIKE '%syntax error%' OR error.message LIKE '%You have an error in your SQL syntax%' OR error.message LIKE '%unterminated quoted string%' OR error.message LIKE '%SQLSTATE[42000]%' OR error.message LIKE '%SQLSTATE[42601]%' OR error.message LIKE '%unrecognized token%') FACET transactionName",
+      "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.sql.SQLSyntaxErrorException', 'org.springframework.jdbc.BadSqlGrammarException', 'org.hibernate.exception.SQLGrammarException') OR error.message LIKE '%syntax error%' OR error.message LIKE '%You have an error in your SQL syntax%' OR error.message LIKE '%unterminated quoted string%' OR error.message LIKE '%SQLSTATE[42000]%' OR error.message LIKE '%SQLSTATE[42601]%' OR error.message LIKE '%unrecognized token%' OR error.message LIKE '%Incorrect syntax near%' OR error.message LIKE '%Error 1064%' OR error.class IN ('psycopg2.errors.SyntaxErrorOrAccessRuleViolation', 'PG::SyntaxError', 'pymysql.err.ProgrammingError')) FACET transactionName",
       "critical": {
         "operator": "above",
         "threshold": 9
@@ -177,7 +177,7 @@
       "runbook": "rce.md",
       "type": "static",
       "window_seconds": 300,
-      "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.io.InvalidClassException', 'java.io.StreamCorruptedException', 'com.fasterxml.jackson.databind.exc.InvalidTypeIdException', 'org.springframework.expression.spel.SpelEvaluationException', 'ognl.OgnlException', 'javax.naming.NamingException') OR error.message LIKE '%Cannot run program%' OR error.message LIKE '%jndi:%' OR error.message LIKE '%unserialize(): Error at offset%' OR error.message LIKE '%phar://%') FACET transactionName",
+      "nrql": "SELECT count(*) FROM TransactionError WHERE appName = '{appName}' AND (error.class IN ('java.io.InvalidClassException', 'java.io.StreamCorruptedException', 'com.fasterxml.jackson.databind.exc.InvalidTypeIdException', 'org.springframework.expression.spel.SpelEvaluationException', 'ognl.OgnlException', 'javax.naming.NamingException') OR error.message LIKE '%Cannot run program%' OR error.message LIKE '%jndi:%' OR error.message LIKE '%unserialize(): Error at offset%' OR error.message LIKE '%phar://%' OR error.message LIKE '%_$$ND_FUNC$$_%' OR error.message LIKE '%BinaryFormatter%' OR error.class IN ('pickle.UnpicklingError', '_pickle.UnpicklingError', 'yaml.constructor.ConstructorError', 'Psych::DisallowedClass', 'System.Runtime.Serialization.SerializationException')) FACET transactionName",
       "critical": {
         "operator": "above",
         "threshold": 4
