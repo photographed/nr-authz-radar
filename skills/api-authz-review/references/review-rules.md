@@ -34,6 +34,17 @@ Laravel のルート（`routes/*.php` の `Route::get('/path', [Ctrl::class, 'me
 - `sql_concat` と raw SQL 一覧は F7（SQLi）の候補。`DB::select("… " . $x)` や `whereRaw`・`->query` の文字列連結。
 - スクリプトが拾えない形（`Route::resource`、`__invoke` コントローラ、`spatie/laravel-permission`、Lumen、素の PHP ルータ、GraphQL の Lighthouse）は grep で補う。
 
+### Step 1c. エンドポイント一覧を作る（Python / Flask・FastAPI・Django）
+
+**`scripts/inventory_python.py <src>` を実行し、`inventory.md` から読み始める**。Flask / FastAPI のルートデコレータ、
+DRF / Django のクラスビュー（`get`/`post` …）と、その認可（`@login_required`・`permission_classes`・`Depends(...)`）、
+ハンドラ本体の候補（`get_by_id`・`sql_concat`・`command_exec`・`unsafe_deserialization`・`mass_assignment`）を出す。
+
+- **認証 ≠ 認可**: `@login_required` や `Depends(get_current_user)` があっても、所有者照合（`filter(user=...)`・`request.user` との比較）が無ければ IDOR。
+- パスが `?` の行は Django/DRF で `urls.py`（または `urlpatterns`）に定義されている。`urls.py` を開いて実パスを対応づける。
+- **拾えない形**: FastAPI の位置引数 `Model.get(id)`（`.get(` は dict 等と区別できないため未フラグ）、`get_object_or_404(Model, id)` の一部、Starlette の `Mount`/`add_route`、Tornado、独自のルータ。これらは grep で補う。
+- SQLi は `cursor.execute(f"…")`・`.raw()`・`.extra()` の文字列組み立て。ORM の素のクエリに注意。
+
 ### Step 2. 認可の情報を取り出す
 | 場所 | 例 |
 |---|---|

@@ -124,3 +124,42 @@ class PhpInventoryTest(unittest.TestCase):
 
     def test_skips_vendor(self):
         self.assertFalse(any("vendor/" in e["file"].replace("\\", "/") for e in self.inv["endpoints"]))
+
+
+import inventory_python as invpy  # noqa: E402
+
+PY_FIXTURE = ROOT / "tests" / "fixtures" / "python-authz"
+
+
+class PythonInventoryTest(unittest.TestCase):
+    def setUp(self):
+        self.inv = invpy.inventory(PY_FIXTURE)
+        self.by = {e["endpoint"]: e for e in self.inv["endpoints"]}
+
+    def test_finds_flask_fastapi_and_drf(self):
+        self.assertIn("GET /api/orders/<int:order_id>", self.by)     # Flask @bp.route
+        self.assertIn("GET /api/v2/orders/{order_id}", self.by)      # FastAPI @router.get
+        self.assertTrue(any(e["handler"] == "OrderView.get" for e in self.inv["endpoints"]))  # DRF class view
+
+    def test_flags_and_authz(self):
+        f = lambda ep: set(self.by[ep]["flags"])  # noqa: E731
+        self.assertIn("get_by_id", f("GET /api/orders/<int:order_id>"))       # IDOR
+        self.assertEqual(f("GET /api/orders/<int:order_id>/receipt"), set())  # owner filter present
+        self.assertIn("sql_concat", f("GET /api/search"))                      # SQLi
+        self.assertFalse(self.by["GET /api/search"]["authz"])                  # no auth decorator
+        self.assertFalse(self.by["POST /api/v2/admin/orders/{order_id}/ship"]["authz"])  # BFLA: no Depends
+        self.assertIn("command_exec", f("POST /api/v2/admin/orders/{order_id}/ship"))
+
+    def test_drf_permission_classes_count_as_authz(self):
+        order_view = next(e for e in self.inv["endpoints"] if e["handler"] == "OrderView.get")
+        self.assertTrue(order_view["authz"])              # permission_classes = [IsAuthenticated]
+        self.assertIn("get_by_id", order_view["flags"])   # but still IDOR (no owner filter)
+
+    def test_unsafe_deserialization_flagged(self):
+        imp = next(e for e in self.inv["endpoints"] if e["handler"] == "ImportView.post")
+        self.assertIn("unsafe_deserialization", imp["flags"])
+
+    def test_only_mode(self):
+        target = (PY_FIXTURE / "app" / "flask_views.py").resolve()
+        small = invpy.inventory(PY_FIXTURE, {target})
+        self.assertTrue(all("flask_views.py" in e["file"] for e in small["endpoints"]))

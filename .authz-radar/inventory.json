@@ -1,87 +1,84 @@
 {
- "source": "examples/php-vuln-site",
+ "source": "tests/fixtures/python-authz",
  "endpoints": [
   {
    "protocol": "rest",
-   "endpoint": "GET /orders/{id}",
-   "handler": "OrderController@show",
-   "controller": "OrderController",
-   "method": "show",
-   "middleware": [
-    "auth"
-   ],
+   "endpoint": "GET ?",
+   "handler": "OrderView.get",
    "authz": true,
-   "line": 13,
-   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/OrderController.php",
+   "flags": [
+    "get_by_id"
+   ],
+   "file": "tests/fixtures/python-authz/app/drf_views.py",
+   "line": 10
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "POST ?",
+   "handler": "ImportView.post",
+   "authz": true,
+   "flags": [
+    "unsafe_deserialization"
+   ],
+   "file": "tests/fixtures/python-authz/app/drf_views.py",
+   "line": 19
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "GET /api/v2/orders/{order_id}",
+   "handler": "read_order",
+   "authz": true,
    "flags": [],
-   "file": "examples/php-vuln-site/routes/api.php",
-   "handler_line": 22
+   "file": "tests/fixtures/python-authz/app/fastapi_routes.py",
+   "line": 10
   },
   {
    "protocol": "rest",
-   "endpoint": "PATCH /orders/{id}/ship",
-   "handler": "AdminController@markShipped",
-   "controller": "AdminController",
-   "method": "markShipped",
-   "middleware": [
-    "auth"
-   ],
-   "authz": true,
-   "line": 14,
-   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/AdminController.php",
+   "endpoint": "POST /api/v2/admin/orders/{order_id}/ship",
+   "handler": "ship",
+   "authz": false,
    "flags": [
-    "find_by_id"
+    "command_exec"
    ],
-   "file": "examples/php-vuln-site/routes/api.php",
-   "handler_line": 18
+   "file": "tests/fixtures/python-authz/app/fastapi_routes.py",
+   "line": 16
   },
   {
    "protocol": "rest",
-   "endpoint": "GET /raw/orders/{id}",
-   "handler": "RawOrderController@show",
-   "controller": "RawOrderController",
-   "method": "show",
-   "middleware": [
-    "auth"
-   ],
+   "endpoint": "GET /api/orders/<int:order_id>",
+   "handler": "get_order",
    "authz": true,
-   "line": 17,
-   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/RawOrderController.php",
    "flags": [
-    "find_by_id"
+    "get_by_id"
    ],
-   "file": "examples/php-vuln-site/routes/api.php",
-   "handler_line": 22
+   "file": "tests/fixtures/python-authz/app/flask_views.py",
+   "line": 10
   },
   {
    "protocol": "rest",
-   "endpoint": "GET /raw/orders",
-   "handler": "RawOrderController@search",
-   "controller": "RawOrderController",
-   "method": "search",
-   "middleware": [
-    "auth"
-   ],
+   "endpoint": "GET /api/orders/<int:order_id>/receipt",
+   "handler": "get_receipt",
    "authz": true,
-   "line": 18,
-   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/RawOrderController.php",
+   "flags": [],
+   "file": "tests/fixtures/python-authz/app/flask_views.py",
+   "line": 18
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "GET /api/search",
+   "handler": "search",
+   "authz": false,
    "flags": [
     "sql_concat"
    ],
-   "file": "examples/php-vuln-site/routes/api.php",
-   "handler_line": 28
-  }
- ],
- "raw_sql": [
-  {
-   "file": "examples/php-vuln-site/app/Http/Controllers/Api/RawOrderController.php",
-   "line": 31
+   "file": "tests/fixtures/python-authz/app/flask_views.py",
+   "line": 25
   }
  ],
  "summary": {
-  "endpoints": 4,
-  "to_read": 3,
-  "no_authz_middleware": 0,
-  "raw_sql_spots": 1
+  "endpoints": 7,
+  "to_read": 5,
+  "no_authz": 2,
+  "path_in_urls_py": 2
  }
 }
