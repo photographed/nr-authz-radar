@@ -163,3 +163,34 @@ class PythonInventoryTest(unittest.TestCase):
         target = (PY_FIXTURE / "app" / "flask_views.py").resolve()
         small = invpy.inventory(PY_FIXTURE, {target})
         self.assertTrue(all("flask_views.py" in e["file"] for e in small["endpoints"]))
+
+
+import inventory_node as invnode  # noqa: E402
+
+NODE_FIXTURE = ROOT / "tests" / "fixtures" / "node-authz"
+
+
+class NodeInventoryTest(unittest.TestCase):
+    def setUp(self):
+        self.inv = invnode.inventory(NODE_FIXTURE)
+        self.by = {e["endpoint"]: e for e in self.inv["endpoints"]}
+
+    def test_finds_express_and_nextjs_routes(self):
+        self.assertIn("GET /api/orders/:id", self.by)          # Express router.get
+        self.assertIn("GET /api/orders/[id]", self.by)         # Next.js app/**/route.js export GET
+
+    def test_express_flags_and_authz(self):
+        f = lambda ep: set(self.by[ep]["flags"])  # noqa: E731
+        self.assertIn("find_by_id", f("GET /api/orders/:id"))              # IDOR (findByPk)
+        self.assertEqual(f("GET /api/orders/:id/receipt"), set())          # scoped by userId
+        self.assertIn("sql_concat", f("GET /api/search"))                  # SQLi template literal
+        self.assertFalse(self.by["GET /api/search"]["authz"])              # no auth middleware
+        self.assertTrue(self.by["GET /api/orders/:id"]["authz"])           # requireAuth present
+
+    def test_nextjs_route_with_ownership_is_not_flagged(self):
+        nextjs = self.by["GET /api/orders/[id]"]
+        self.assertTrue(nextjs["authz"])             # withAuthzRadar recognised
+        self.assertEqual(set(nextjs["flags"]), set())  # ownership() call = owner hint
+
+    def test_skips_node_modules_and_tests(self):
+        self.assertFalse(any("node_modules" in e["file"] for e in self.inv["endpoints"]))

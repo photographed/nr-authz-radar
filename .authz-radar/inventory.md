@@ -1,14 +1,13 @@
-# Python endpoint inventory (7 endpoints, 5 to read)
+# Node.js endpoint inventory (5 endpoints, 2 to read)
 
-Candidates only. Read the flagged handlers (file:line) to confirm. A path shown as `?` is
-routed in `urls.py` (Django / DRF) — map it there. Being authenticated is not authorization.
+Candidates only. Read the flagged handlers (file:line) to confirm. Middleware that only
+authenticates (requireAuth, passport) is not authorization. Next.js `middleware.ts` runs on
+the Edge runtime and is not instrumented — check owner rules in the route handler.
 
-| Endpoint | Handler | Authz | Flags | Location |
+| Endpoint | Handler | Authz mw | Flags | Location |
 |---|---|---|---|---|
-| `GET ?` | `OrderView.get` | yes | get_by_id | `tests/fixtures/python-authz/app/drf_views.py:10` |
-| `POST ?` | `ImportView.post` | yes | unsafe_deserialization | `tests/fixtures/python-authz/app/drf_views.py:19` |
-| `GET /api/v2/orders/{order_id}` | `read_order` | yes | — | `tests/fixtures/python-authz/app/fastapi_routes.py:10` |
-| `POST /api/v2/admin/orders/{order_id}/ship` | `ship` | **none** | command_exec | `tests/fixtures/python-authz/app/fastapi_routes.py:16` |
-| `GET /api/orders/<int:order_id>` | `get_order` | yes | get_by_id | `tests/fixtures/python-authz/app/flask_views.py:10` |
-| `GET /api/orders/<int:order_id>/receipt` | `get_receipt` | yes | — | `tests/fixtures/python-authz/app/flask_views.py:18` |
-| `GET /api/search` | `search` | **none** | sql_concat | `tests/fixtures/python-authz/app/flask_views.py:25` |
+| `GET /api/orders/[id]` | `route.js:GET` | yes | — | `tests/fixtures/node-authz/app/api/orders/[id]/route.js:13` |
+| `GET /api/orders/:id` | `(inline)` | yes | find_by_id | `tests/fixtures/node-authz/routes/orders.js:7` |
+| `GET /api/orders/:id/receipt` | `(inline)` | yes | — | `tests/fixtures/node-authz/routes/orders.js:13` |
+| `GET /api/search` | `(inline)` | **none** | sql_concat | `tests/fixtures/node-authz/routes/orders.js:19` |
+| `POST /api/admin/orders/:id/ship` | `(inline)` | yes | — | `tests/fixtures/node-authz/routes/orders.js:26` |

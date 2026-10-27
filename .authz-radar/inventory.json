@@ -1,84 +1,59 @@
 {
- "source": "tests/fixtures/python-authz",
+ "source": "tests/fixtures/node-authz",
  "endpoints": [
   {
    "protocol": "rest",
-   "endpoint": "GET ?",
-   "handler": "OrderView.get",
-   "authz": true,
-   "flags": [
-    "get_by_id"
-   ],
-   "file": "tests/fixtures/python-authz/app/drf_views.py",
-   "line": 10
-  },
-  {
-   "protocol": "rest",
-   "endpoint": "POST ?",
-   "handler": "ImportView.post",
-   "authz": true,
-   "flags": [
-    "unsafe_deserialization"
-   ],
-   "file": "tests/fixtures/python-authz/app/drf_views.py",
-   "line": 19
-  },
-  {
-   "protocol": "rest",
-   "endpoint": "GET /api/v2/orders/{order_id}",
-   "handler": "read_order",
+   "endpoint": "GET /api/orders/[id]",
+   "handler": "route.js:GET",
    "authz": true,
    "flags": [],
-   "file": "tests/fixtures/python-authz/app/fastapi_routes.py",
-   "line": 10
+   "file": "tests/fixtures/node-authz/app/api/orders/[id]/route.js",
+   "line": 13
   },
   {
    "protocol": "rest",
-   "endpoint": "POST /api/v2/admin/orders/{order_id}/ship",
-   "handler": "ship",
-   "authz": false,
-   "flags": [
-    "command_exec"
-   ],
-   "file": "tests/fixtures/python-authz/app/fastapi_routes.py",
-   "line": 16
-  },
-  {
-   "protocol": "rest",
-   "endpoint": "GET /api/orders/<int:order_id>",
-   "handler": "get_order",
+   "endpoint": "GET /api/orders/:id",
+   "handler": "(inline)",
    "authz": true,
    "flags": [
-    "get_by_id"
+    "find_by_id"
    ],
-   "file": "tests/fixtures/python-authz/app/flask_views.py",
-   "line": 10
+   "file": "tests/fixtures/node-authz/routes/orders.js",
+   "line": 7
   },
   {
    "protocol": "rest",
-   "endpoint": "GET /api/orders/<int:order_id>/receipt",
-   "handler": "get_receipt",
+   "endpoint": "GET /api/orders/:id/receipt",
+   "handler": "(inline)",
    "authz": true,
    "flags": [],
-   "file": "tests/fixtures/python-authz/app/flask_views.py",
-   "line": 18
+   "file": "tests/fixtures/node-authz/routes/orders.js",
+   "line": 13
   },
   {
    "protocol": "rest",
    "endpoint": "GET /api/search",
-   "handler": "search",
+   "handler": "(inline)",
    "authz": false,
    "flags": [
     "sql_concat"
    ],
-   "file": "tests/fixtures/python-authz/app/flask_views.py",
-   "line": 25
+   "file": "tests/fixtures/node-authz/routes/orders.js",
+   "line": 19
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "POST /api/admin/orders/:id/ship",
+   "handler": "(inline)",
+   "authz": true,
+   "flags": [],
+   "file": "tests/fixtures/node-authz/routes/orders.js",
+   "line": 26
   }
  ],
  "summary": {
-  "endpoints": 7,
-  "to_read": 5,
-  "no_authz": 2,
-  "path_in_urls_py": 2
+  "endpoints": 5,
+  "to_read": 2,
+  "no_authz": 1
  }
 }

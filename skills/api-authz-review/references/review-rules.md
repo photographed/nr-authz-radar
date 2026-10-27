@@ -45,6 +45,17 @@ DRF / Django のクラスビュー（`get`/`post` …）と、その認可（`@l
 - **拾えない形**: FastAPI の位置引数 `Model.get(id)`（`.get(` は dict 等と区別できないため未フラグ）、`get_object_or_404(Model, id)` の一部、Starlette の `Mount`/`add_route`、Tornado、独自のルータ。これらは grep で補う。
 - SQLi は `cursor.execute(f"…")`・`.raw()`・`.extra()` の文字列組み立て。ORM の素のクエリに注意。
 
+### Step 1d. エンドポイント一覧を作る（Node.js / Express・Next.js）
+
+**`scripts/inventory_node.py <src>` を実行し、`inventory.md` から読み始める**。Express/Koa/Fastify の
+`app.get('/x', mw, handler)` と、Next.js のファイルベースルート（`app/**/route.{js,ts}` の `export GET`、`pages/api/**`）、
+ミドルウェアの認可、本体の候補（`find_by_id`・`sql_concat`・`command_exec`・`unsafe_deserialization`・`mass_assignment`）を出す。
+
+- **認証 ≠ 認可**: `requireAuth`・`passport.authenticate` は認証。所有者照合（`req.user` との比較・`where: { userId }`・`ownership(...)`）が無ければ IDOR。
+- **Next.js の `middleware.ts` は Edge ランタイムで、New Relic にも検知にも出ない。** 認可をそこだけに置くのは危険。所有者照合は Route Handler の中で確認する（`instrumentation-nextjs.md`）。
+- **拾えない形**: NestJS の `@Get()` + `@UseGuards()`、Fastify の `fastify.route({...})`、動的に組むルータ、tRPC、GraphQL のリゾルバ。これらは grep で補う。
+- BFLA（管理者操作に役割チェックが無い）は regex では出ないので、`/admin/` などのパスは本体を読んで役割確認の有無を見る。
+
 ### Step 2. 認可の情報を取り出す
 | 場所 | 例 |
 |---|---|
