@@ -140,11 +140,12 @@ S2（IDOR 成功の証拠）に到達するためのコードを [`instrumentati
 |---|---|---|
 | **Java**（Spring Boot / Spring Security） | 計装ライブラリ（アノテーション1つで使える。REST・GraphQL・WebSocket（STOMP）に対応） | ✅ Spring Boot 3.5・4.1 でテスト済み |
 | Python・Node.js・Ruby・Go | 取り込める小さなファイル | ✅ 単体テスト済み（API は実パッケージで確認） |
-| PHP | 同上 | ⚠️ API 名が未確認 |
+| **PHP**（Laravel 12 / 素の PHP） | 計装ライブラリ（Composer。ミドルウェア / トレイトで使える） | ✅ 関数名をエージェント 12.12.0 で確認。Laravel 12・PHP 8.5.11 のデモで実動作を確認 |
 | .NET | 同上 | ❌ 未コンパイル |
 
 全言語で、仮名化したユーザー ID が同じ値になります（サービスごとに言語が違っても同じユーザーを追える）。
 コードを変更できない Java アプリ向けには、認可チェックのメソッドを探して XML 計装の候補を作るスクリプト（`scripts/gen_xml_candidates.py`）もあります。
+PHP（Laravel）のエンドポイント棚卸しは `scripts/inventory_php.py`、手元で試せる脆弱なデモは [`examples/php-vuln-site`](examples/php-vuln-site)（ローカル専用）。
 
 ### Java
 
@@ -382,6 +383,8 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.9.0** 英語対応（README・はじめに・サンプル・スクリプトの `--lang en`・Skill の出力言語）、はじめにのドキュメント、サンプルの実行結果
 - [x] **v0.10.0** 証拠の強さ（証拠 / 強い兆候 / 異常）による報告とアラートの振り分け、`hunt.py`（NerdGraph）、トークン削減（短い SKILL.md・`catalog.py`・`inventory_java.py`・差分モード）、コストの整理
 - [x] **v0.11.0** 連携状況の表記を実態に合わせて修正、Browser の突き合わせ（D24・U07）、Errors Inbox・Performance Risks Inbox の連携の設計、ログのラストワンマイル（L01〜L04・R16・Workflow・Java の認可判断のログ行）
+- [x] **v0.12.0** MITRE ATT&CK v20.0（Enterprise）との対応（全 Finding・検知に技術 ID、`scripts/attack_layer.py` で Navigator レイヤー）
+- [x] **v0.13.0** PHP をフル対応（Laravel 12 計装ライブラリ・`inventory_php.py`・PHP 8.5.11 の脆弱デモ `examples/php-vuln-site`・D06/D21 に PDO パターン）
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考

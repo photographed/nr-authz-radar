@@ -17,7 +17,7 @@ SOURCES = {
     "node": INST / "node" / "authz-radar.js",
     "ruby": INST / "ruby" / "authz_radar.rb",
     "go": INST / "go" / "authzradar.go",
-    "php": INST / "php" / "AuthzRadar.php",
+    "php": INST / "php" / "src" / "Telemetry.php",
     "dotnet": INST / "dotnet" / "AuthzRadar.cs",
     "java": INST / "java/src/main/java/io/github/photographed/authzradar/AuthzAttributes.java",
 }
@@ -26,14 +26,14 @@ PSEUDONYM = {
     "python": (["python3", "-c", "import authz_radar as a;print(a.pseudonym('alice', b'k'))"], INST / "python"),
     "node": (["node", "-e", "console.log(require('./authz-radar').pseudonym('alice','k'))"], INST / "node"),
     "ruby": (["ruby", "-r", "./authz_radar", "-e", "puts AuthzRadar.pseudonym('alice','k')"], INST / "ruby"),
-    "php": (["php", "-r", "require 'AuthzRadar.php'; echo AuthzRadar\\AuthzRadar::pseudonym('alice','k');"], INST / "php"),
+    "php": (["php", "-r", "require 'autoload.php'; echo (new AuthzRadar\\Pseudonymizer('k'))->user('alice');"], INST / "php"),
 }
 
 TESTS = {
     "python": (["python3", "-m", "unittest", "-q", "test_authz_radar"], INST / "python"),
     "node": (["node", "--test"], INST / "node"),
     "ruby": (["ruby", "authz_radar_test.rb"], INST / "ruby"),
-    "php": (["php", "AuthzRadarTest.php"], INST / "php"),
+    "php": (["php", "tests/TelemetryTest.php"], INST / "php"),
     "go": (["go", "test", "./..."], INST / "go"),
 }
 

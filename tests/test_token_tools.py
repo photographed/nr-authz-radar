@@ -93,3 +93,34 @@ class SkillBudgetTest(unittest.TestCase):
             for ref in set(re.findall(r"`((?:\.\./[\w-]+/)?(?:references|shared|scripts|templates)/[\w./-]+?\.(?:md|json|py|yaml))`", text)):
                 base = skill.parent if not ref.startswith(("shared/", "scripts/", "templates/")) else ROOT
                 self.assertTrue((base / ref).resolve().exists(), f"{skill.parent.name}: {ref}")
+
+
+import inventory_php as invphp  # noqa: E402
+
+PHP_SITE = ROOT / "examples" / "php-vuln-site"
+
+
+class PhpInventoryTest(unittest.TestCase):
+    def setUp(self):
+        self.inv = invphp.inventory(PHP_SITE)
+        self.by_ep = {e["endpoint"]: e for e in self.inv["endpoints"]}
+
+    def test_finds_laravel_routes_with_path_variables(self):
+        for ep in ("GET /orders/{id}", "PATCH /orders/{id}/ship", "GET /raw/orders/{id}", "GET /raw/orders"):
+            self.assertIn(ep, self.by_ep)
+
+    def test_flags_match_the_deliberate_bugs(self):
+        f = lambda ep: set(self.by_ep[ep]["flags"])  # noqa: E731
+        self.assertEqual(f("GET /orders/{id}"), set())                 # ensureOwns() is present
+        self.assertIn("find_by_id", f("GET /raw/orders/{id}"))         # IDOR, no owner check
+        self.assertIn("sql_concat", f("GET /raw/orders"))              # SQL injection
+        self.assertTrue(self.inv["raw_sql"])                           # same spot in the raw-SQL list
+
+    def test_only_mode_limits_endpoints(self):
+        target = (PHP_SITE / "routes" / "api.php").resolve()
+        # routes live in api.php; limiting to it still yields the routes (controllers are read for flags)
+        small = invphp.inventory(PHP_SITE, {target})
+        self.assertEqual({e["endpoint"] for e in small["endpoints"]}, set(self.by_ep))
+
+    def test_skips_vendor(self):
+        self.assertFalse(any("vendor/" in e["file"].replace("\\", "/") for e in self.inv["endpoints"]))

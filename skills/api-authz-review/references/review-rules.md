@@ -24,6 +24,16 @@ Gateway の設定が無い場合は、「スコープ検証がコード外にあ
 
 各エンドポイントについて: HTTP メソッド、パス、ハンドラ（`Class#method`）、パス変数、`@RequestBody` の型、戻り値の型。
 
+### Step 1b. エンドポイント一覧を作る（PHP / Laravel）
+
+PHP のリポジトリでは **`scripts/inventory_php.py <src>` を実行し、`inventory.md` から読み始める**。
+Laravel のルート（`routes/*.php` の `Route::get('/path', [Ctrl::class, 'method'])`）と、各ルート・グループのミドルウェア、
+コントローラ本体の怪しい箇所（`find_by_id`・`sql_concat`・`mass_assignment`・`command_exec`・`unserialize`・`dynamic_include`）を候補として出す。
+
+- **ミドルウェア** `auth` は認証であって認可ではない。所有者照合（`authz.owner` ミドルウェア・`ensureOwns`・`->where('user_id', ...)`・Gate/Policy）が **本体に無い** エンドポイントを開いて確かめる。
+- `sql_concat` と raw SQL 一覧は F7（SQLi）の候補。`DB::select("… " . $x)` や `whereRaw`・`->query` の文字列連結。
+- スクリプトが拾えない形（`Route::resource`、`__invoke` コントローラ、`spatie/laravel-permission`、Lumen、素の PHP ルータ、GraphQL の Lighthouse）は grep で補う。
+
 ### Step 2. 認可の情報を取り出す
 | 場所 | 例 |
 |---|---|

@@ -15,7 +15,7 @@ resource "newrelic_nrql_alert_condition" "d06" {
   aggregation_delay            = 120
 
   nrql {
-    query = "SELECT count(*) FROM TransactionError WHERE appName = '${var.app_name}' AND (error.class IN ('java.sql.SQLSyntaxErrorException', 'org.springframework.jdbc.BadSqlGrammarException', 'org.hibernate.exception.SQLGrammarException') OR error.message LIKE '%syntax error%' OR error.message LIKE '%You have an error in your SQL syntax%' OR error.message LIKE '%unterminated quoted string%') FACET transactionName"
+    query = "SELECT count(*) FROM TransactionError WHERE appName = '${var.app_name}' AND (error.class IN ('java.sql.SQLSyntaxErrorException', 'org.springframework.jdbc.BadSqlGrammarException', 'org.hibernate.exception.SQLGrammarException') OR error.message LIKE '%syntax error%' OR error.message LIKE '%You have an error in your SQL syntax%' OR error.message LIKE '%unterminated quoted string%' OR error.message LIKE '%SQLSTATE[42000]%' OR error.message LIKE '%SQLSTATE[42601]%' OR error.message LIKE '%unrecognized token%') FACET transactionName"
   }
 
   warning {

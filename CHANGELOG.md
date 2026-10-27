@@ -7,6 +7,18 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-27
+
+### Added
+- **PHP をフル対応に**。計装ライブラリ `instrumentation/php/`（Composer パッケージ）: 素の PHP 向けの `Telemetry`・`Pseudonymizer`・`DecisionLog`・`NewRelicAgent`、Laravel 12 統合（サービスプロバイダ、`authz.owner` ミドルウェア、`ChecksOwnership` トレイト、設定ファイル）。関数名は New Relic PHP エージェント 12.12.0 のソースで確認（`newrelic_set_user_id` は 10.12+、無い環境は自動代替）。23 件の単体テストは PHP 8.3 で通過
+- **PHP には expected error の仕組みが無い**ことを反映: 拒否は既定でエラーとして送らず、`authz.decision` 属性で検知（`instrumentation-php.md`）
+- 手元で試せる脆弱なデモ `examples/php-vuln-site`（Laravel 12・PHP 8.5.11・Docker）。IDOR（計装あり／なし）・SQLi・BFLA を仕込み、observe/enforce を切替可能。**127.0.0.1 限定・デプロイ禁止**。PHP 8.5.11 と 8.3 で動作確認済み
+- `scripts/inventory_php.py`: Laravel のルート・ミドルウェアとコントローラの怪しい箇所を棚卸し（`find_by_id`・`sql_concat` 等）。`api-authz-review` の Step 1b
+- D06（DB 構文エラー）と D21（RCE の試み）に PHP / PDO のパターンを追加（SQLSTATE、`unserialize()`、`phar://` 等）
+
+### Changed
+- `instrumentation-other-languages.md` の PHP 行を「未確認」から「確認済み・デモで実動作確認」に更新。PHP は専用ページ `instrumentation-php.md` へ分離
+
 ## [0.12.0] - 2026-10-27
 
 ### Added

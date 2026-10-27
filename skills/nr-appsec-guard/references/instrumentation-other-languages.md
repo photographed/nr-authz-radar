@@ -1,5 +1,7 @@
 # Java 以外の言語の計装（S2）
 
+> **PHP は専用ページ `instrumentation-php.md` を参照**（Laravel 12 統合・`newrelic.ini`・素の PHP）。以下は Python / Node.js / Ruby / Go / .NET 共通の最小ファイルの説明。
+
 **目的**: 段階 S2（`resource.owner_match` と `authz.decision`）に到達する。Java は計装ライブラリがある（`instrumentation-java.md`）。
 他の言語は、そのまま取り込める小さなファイルを `instrumentation/<言語>/` に置いている。
 
@@ -26,7 +28,7 @@
 | Node.js | `instrumentation/node/authz-radar.js` | `addCustomAttribute`・`setUserID`・`noticeError(err, attrs, expected)`（newrelic 14.8.0） | ✅ 単体テスト |
 | Ruby | `instrumentation/ruby/authz_radar.rb` | `NewRelic::Agent.add_custom_attributes`・`set_user_id`・`notice_error(e, expected: true)`（newrelic_rpm 10.9.1） | ✅ 単体テスト |
 | Go | `instrumentation/go/authzradar.go` | `txn.AddAttribute`・`SetUserID`・`NoticeExpectedError`（go-agent v3.45.0。**Go 1.25 以上**） | ✅ 単体テスト。本物の `*newrelic.Transaction` が必要な API を満たすこともコンパイル時に確認 |
-| PHP | `instrumentation/php/AuthzRadar.php` | ⚠️ **未確認**（エージェントが C 拡張のため）。`newrelic_add_custom_parameter` 等。関数が無ければ何もしない | ✅ 単体テスト（API は差し替え） |
+| PHP | `instrumentation/php/`（Laravel 12 統合つき。別ページ **`instrumentation-php.md`**） | ✅ 関数名をエージェント 12.12.0 のソースで確認（`newrelic_add_custom_parameter`・`newrelic_set_user_id` 10.12+・`newrelic_notice_error`）。関数が無ければ何もしない | ✅ 単体テスト。Laravel 12・PHP 8.5.11 の脆弱デモ `examples/php-vuln-site` で実動作を確認 |
 | .NET | `instrumentation/dotnet/AuthzRadar.cs` | `GetAgent().CurrentTransaction`・`AddCustomAttribute`・`SetUserId`・`NoticeError`（NewRelic.Agent.Api 10.56.0） | ❌ **未コンパイル**（ビルド環境に .NET SDK が無い） |
 
 どの言語でも、テストは **New Relic の API を差し替えて** 行っている（エージェント無しで、どの属性がどう送られるかを確認）。
@@ -49,7 +51,8 @@ High-security mode などで属性が送れない場合は、拒否したとき�
 | 言語 | 方法 |
 |---|---|
 | Java・Python・Node.js・Ruby・Go | API の引数（または専用の関数）で expected を指定できる |
-| .NET・PHP | API の引数では指定できなかった（確認できた範囲）。**エージェントの設定で、例外クラスを expected に指定する** |
+| .NET | API の引数では指定できなかった（確認できた範囲）。**エージェントの設定で、例外クラスを expected に指定する** |
+| PHP | **expected を指定する仕組みが無い**（`newrelic.error_collector.ignore_exceptions` のみ）。そのため拒否は既定でエラーとして送らず、`authz.decision` 属性で検知する（`instrumentation-php.md`） |
 
 ## 確認する
 ```sql

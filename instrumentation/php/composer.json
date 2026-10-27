@@ -1,0 +1,21 @@
+{
+    "name": "photographed/nr-authz-radar",
+    "description": "Authorization telemetry (IDOR / BOLA detection) for New Relic: PHP core and Laravel 12 integration",
+    "type": "library",
+    "license": "Apache-2.0",
+    "require": {
+        "php": ">=8.2"
+    },
+    "suggest": {
+        "laravel/framework": "^12.0 for the service provider and middleware",
+        "ext-newrelic": "New Relic PHP agent 10.12+ (newrelic_set_user_id); without it nothing is sent and nothing breaks"
+    },
+    "autoload": {
+        "psr-4": { "AuthzRadar\\": "src/" }
+    },
+    "extra": {
+        "laravel": {
+            "providers": ["AuthzRadar\\Laravel\\AuthzRadarServiceProvider"]
+        }
+    }
+}

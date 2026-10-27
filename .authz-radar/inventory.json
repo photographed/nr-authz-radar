@@ -1,0 +1,87 @@
+{
+ "source": "examples/php-vuln-site",
+ "endpoints": [
+  {
+   "protocol": "rest",
+   "endpoint": "GET /orders/{id}",
+   "handler": "OrderController@show",
+   "controller": "OrderController",
+   "method": "show",
+   "middleware": [
+    "auth"
+   ],
+   "authz": true,
+   "line": 13,
+   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/OrderController.php",
+   "flags": [],
+   "file": "examples/php-vuln-site/routes/api.php",
+   "handler_line": 22
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "PATCH /orders/{id}/ship",
+   "handler": "AdminController@markShipped",
+   "controller": "AdminController",
+   "method": "markShipped",
+   "middleware": [
+    "auth"
+   ],
+   "authz": true,
+   "line": 14,
+   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/AdminController.php",
+   "flags": [
+    "find_by_id"
+   ],
+   "file": "examples/php-vuln-site/routes/api.php",
+   "handler_line": 18
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "GET /raw/orders/{id}",
+   "handler": "RawOrderController@show",
+   "controller": "RawOrderController",
+   "method": "show",
+   "middleware": [
+    "auth"
+   ],
+   "authz": true,
+   "line": 17,
+   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/RawOrderController.php",
+   "flags": [
+    "find_by_id"
+   ],
+   "file": "examples/php-vuln-site/routes/api.php",
+   "handler_line": 22
+  },
+  {
+   "protocol": "rest",
+   "endpoint": "GET /raw/orders",
+   "handler": "RawOrderController@search",
+   "controller": "RawOrderController",
+   "method": "search",
+   "middleware": [
+    "auth"
+   ],
+   "authz": true,
+   "line": 18,
+   "controller_file": "examples/php-vuln-site/app/Http/Controllers/Api/RawOrderController.php",
+   "flags": [
+    "sql_concat"
+   ],
+   "file": "examples/php-vuln-site/routes/api.php",
+   "handler_line": 28
+  }
+ ],
+ "raw_sql": [
+  {
+   "file": "examples/php-vuln-site/app/Http/Controllers/Api/RawOrderController.php",
+   "line": 31
+  }
+ ],
+ "summary": {
+  "endpoints": 4,
+  "to_read": 3,
+  "no_authz_middleware": 0,
+  "raw_sql_spots": 1
+ }
+}

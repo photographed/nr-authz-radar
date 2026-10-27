@@ -1,0 +1,23 @@
+# Local demo only. The port is bound to 127.0.0.1 so the deliberately vulnerable app is never
+# reachable from the network. Never deploy this.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        # Set NR_AGENT: 1 to bake in the New Relic PHP agent (then set NEW_RELIC_LICENSE_KEY in .env).
+        NR_AGENT: ${NR_AGENT:-0}
+    image: nr-authz-radar-php-vuln-site:8.5.11
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - .:/app
+      # the nr-authz-radar PHP library, referenced as a path repo in composer.json
+      - ../../instrumentation/php:/instrumentation/php
+    env_file:
+      - .env
+    environment:
+      # The agent reads these; harmless when the agent is not installed.
+      NEWRELIC_LICENSE: ${NEW_RELIC_LICENSE_KEY:-}
+      NEWRELIC_APPNAME: ${NEW_RELIC_APPNAME:-php-vuln-site}

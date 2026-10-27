@@ -118,6 +118,8 @@ WHERE appName = '{appName}' AND (
   OR error.message LIKE '%unterminated quoted string%'
   OR error.message LIKE '%Unclosed quotation mark%'
   OR error.message LIKE '%ORA-00933%' OR error.message LIKE '%ORA-01756%'
+  OR error.message LIKE '%SQLSTATE[42000]%' OR error.message LIKE '%SQLSTATE[42601]%'
+  OR error.message LIKE '%unrecognized token%'
 )
 FACET transactionName, error.class SINCE {since}
 ```
@@ -125,6 +127,7 @@ FACET transactionName, error.class SINCE {since}
 - **Errors Inbox との関係**: 同じエラーが Errors Inbox で新しいエラーグループとして現れる。Hunt では、
   直近で**初めて出現したグループ**かどうかを `SINCE {baseline}` の結果と比べて判定する。
 - 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
+- PHP: PDO の例外は SQLSTATE がメッセージに入る（MySQL `42000`、PostgreSQL `42601`、SQLite は `syntax error` / `unrecognized token`）。Laravel では `error.class` が `Illuminate\Database\QueryException`（DB のエラー全般）になるので、**PHP ではメッセージで判定する**。High-security mode の PHP アプリでは D06 は使えない
 
 ### D07 注入らしい SQL 文 — 段階 S0 — 証拠 — 前提 SPAN — 要検証
 ```sql
@@ -311,6 +314,9 @@ WHERE appName = '{appName}' AND (
   OR error.message LIKE '%java.lang.Runtime%'
   OR error.message LIKE '%commons.collections%'
   OR error.message LIKE '%ysoserial%'
+  OR error.message LIKE '%unserialize(): Error at offset%'
+  OR error.message LIKE '%__PHP_Incomplete_Class%'
+  OR error.message LIKE '%phar://%'
 )
 FACET transactionName, error.class SINCE {baseline}
 ```
@@ -319,6 +325,7 @@ FACET transactionName, error.class SINCE {baseline}
 - 判定:
   - `strong`: 同じトランザクションで1時間に5件以上、または異なる種類の例外が2つ以上、または D20 と同時
   - `weak`: `first_seen` が直近 `{since}` 以内（初めて出た）
+- PHP: 不正なデータの `unserialize()`（Laravel では警告が `ErrorException` になる）、オブジェクトの復元失敗（`__PHP_Incomplete_Class`）、`phar://` を使ったデシリアライズの試み。
 - 誤検知: 正当な入力ミスでも `SpelEvaluationException` 等は出る。平常時の件数（`{baseline}`）と比べる。
 - 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
 
