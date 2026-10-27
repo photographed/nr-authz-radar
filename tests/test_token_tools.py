@@ -194,3 +194,46 @@ class NodeInventoryTest(unittest.TestCase):
 
     def test_skips_node_modules_and_tests(self):
         self.assertFalse(any("node_modules" in e["file"] for e in self.inv["endpoints"]))
+
+
+import inventory_ruby as invrb  # noqa: E402
+import inventory_go as invgo    # noqa: E402
+
+RB_FIXTURE = ROOT / "tests" / "fixtures" / "ruby-authz"
+GO_FIXTURE = ROOT / "tests" / "fixtures" / "go-authz"
+
+
+class RubyInventoryTest(unittest.TestCase):
+    def setUp(self):
+        self.inv = invrb.inventory(RB_FIXTURE)
+        self.by = {e["endpoint"]: e for e in self.inv["endpoints"]}
+
+    def test_finds_actions_and_routes(self):
+        self.assertIn("orders#show", self.by)
+        self.assertTrue(self.inv["routes"])   # resources :orders from routes.rb
+
+    def test_flags(self):
+        f = lambda ep: set(self.by[ep]["flags"])  # noqa: E731
+        self.assertIn("find_by_id", f("orders#show"))      # Order.find(params[:id]) IDOR
+        self.assertEqual(f("orders#receipt"), set())       # current_user.orders.find
+        self.assertIn("sql_concat", f("orders#search"))    # where("... #{params} ...")
+
+    def test_before_action_scoping_does_not_bleed(self):
+        # authenticate_user! is authn; it shows as a filter but the reviewer still reads the action
+        self.assertIn("authenticate_user", self.by["orders#show"]["filters"])
+
+
+class GoInventoryTest(unittest.TestCase):
+    def setUp(self):
+        self.inv = invgo.inventory(GO_FIXTURE)
+        self.by = {e["endpoint"]: e for e in self.inv["endpoints"]}
+
+    def test_finds_routes(self):
+        for ep in ("GET /api/orders/{id}", "GET /api/search", "POST /api/admin/orders/{id}/ship"):
+            self.assertIn(ep, self.by)
+
+    def test_flags(self):
+        self.assertIn("query_by_id", self.by["GET /api/orders/{id}"]["flags"])   # IDOR
+        self.assertIn("sql_concat", self.by["GET /api/search"]["flags"])         # fmt.Sprintf
+        self.assertIn("command_exec", self.by["POST /api/admin/orders/{id}/ship"]["flags"])
+        self.assertTrue(all(not e["authz"] for e in self.inv["endpoints"]))       # fixture has no auth mw

@@ -56,6 +56,25 @@ DRF / Django のクラスビュー（`get`/`post` …）と、その認可（`@l
 - **拾えない形**: NestJS の `@Get()` + `@UseGuards()`、Fastify の `fastify.route({...})`、動的に組むルータ、tRPC、GraphQL のリゾルバ。これらは grep で補う。
 - BFLA（管理者操作に役割チェックが無い）は regex では出ないので、`/admin/` などのパスは本体を読んで役割確認の有無を見る。
 
+### Step 1e. エンドポイント一覧を作る（Ruby / Rails・Sinatra）
+
+**`scripts/inventory_ruby.py <src>` を実行**。コントローラのアクションと、そこに掛かる `before_action`、本体の候補
+（`find_by_id`・`sql_concat`・`command_exec`・`unsafe_deserialization`・`mass_assignment`）、`config/routes.rb` のルートを出す。
+
+- **認証 ≠ 認可**: `before_action :authenticate_user!` は認証。`current_user.orders.find(...)` のようにスコープしていない `Model.find(params[:id])` は IDOR。
+- 認可は Pundit（`authorize @order`）や CanCanCan（`load_and_authorize_resource`）で表現されることが多い。これらが本体・フィルタに無いか確認する。
+- `routes.rb` の `resources` は複数のアクション（index/show/create/update/destroy）に展開される。実際に定義されているアクションと突き合わせる。
+- SQLi は `where("... #{params} ...")`・`find_by_sql`・`order(params[...])`。
+
+### Step 1f. エンドポイント一覧を作る（Go / net/http・chi・gin・echo）
+
+**`scripts/inventory_go.py <src>` を実行**。`r.Get("/x", h)`・`mux.HandleFunc`・`e.GET` などのルート登録、一緒に渡すミドルウェア、
+本体の候補（`query_by_id`・`sql_concat`・`command_exec`・`template_injection`）を出す。
+
+- Go は認可フレームワークが定型でないので、`query_by_id`（リクエストの id をそのまま WHERE に使い、所有者の列が無い）を特に確認する。
+- SQLi は `fmt.Sprintf` で組んだ文字列を `db.Query`/`Exec` に渡す形。プレースホルダ（`$1`・`?`）を使っているかを見る。
+- **拾えない形**: 標準ライブラリの `http.ServeMux` を変数経由で組む、独自ルータ、gRPC。grep で補う。
+
 ### Step 2. 認可の情報を取り出す
 | 場所 | 例 |
 |---|---|

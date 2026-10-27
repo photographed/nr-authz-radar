@@ -1,59 +1,43 @@
 {
- "source": "tests/fixtures/node-authz",
+ "source": "tests/fixtures/go-authz",
  "endpoints": [
   {
    "protocol": "rest",
-   "endpoint": "GET /api/orders/[id]",
-   "handler": "route.js:GET",
-   "authz": true,
-   "flags": [],
-   "file": "tests/fixtures/node-authz/app/api/orders/[id]/route.js",
-   "line": 13
-  },
-  {
-   "protocol": "rest",
-   "endpoint": "GET /api/orders/:id",
-   "handler": "(inline)",
-   "authz": true,
+   "endpoint": "GET /api/orders/{id}",
+   "handler": "(inline/ref)",
+   "authz": false,
    "flags": [
-    "find_by_id"
+    "query_by_id"
    ],
-   "file": "tests/fixtures/node-authz/routes/orders.js",
-   "line": 7
-  },
-  {
-   "protocol": "rest",
-   "endpoint": "GET /api/orders/:id/receipt",
-   "handler": "(inline)",
-   "authz": true,
-   "flags": [],
-   "file": "tests/fixtures/node-authz/routes/orders.js",
+   "file": "tests/fixtures/go-authz/handlers.go",
    "line": 13
   },
   {
    "protocol": "rest",
    "endpoint": "GET /api/search",
-   "handler": "(inline)",
+   "handler": "(inline/ref)",
    "authz": false,
    "flags": [
     "sql_concat"
    ],
-   "file": "tests/fixtures/node-authz/routes/orders.js",
-   "line": 19
+   "file": "tests/fixtures/go-authz/handlers.go",
+   "line": 20
   },
   {
    "protocol": "rest",
-   "endpoint": "POST /api/admin/orders/:id/ship",
-   "handler": "(inline)",
-   "authz": true,
-   "flags": [],
-   "file": "tests/fixtures/node-authz/routes/orders.js",
+   "endpoint": "POST /api/admin/orders/{id}/ship",
+   "handler": "(inline/ref)",
+   "authz": false,
+   "flags": [
+    "command_exec"
+   ],
+   "file": "tests/fixtures/go-authz/handlers.go",
    "line": 26
   }
  ],
  "summary": {
-  "endpoints": 5,
-  "to_read": 2,
-  "no_authz": 1
+  "endpoints": 3,
+  "to_read": 3,
+  "no_authz": 3
  }
 }
