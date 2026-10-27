@@ -1,0 +1,20 @@
+{
+  "name": "@nr-authz-radar/node",
+  "version": "0.14.0",
+  "description": "Authorization telemetry (IDOR/BOLA) for New Relic: Node.js core and Next.js helper",
+  "license": "Apache-2.0",
+  "main": "authz-radar.js",
+  "exports": {
+    ".": "./authz-radar.js",
+    "./nextjs": "./nextjs.js"
+  },
+  "peerDependencies": {
+    "newrelic": ">=12"
+  },
+  "peerDependenciesMeta": {
+    "newrelic": { "optional": true }
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

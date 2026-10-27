@@ -1,6 +1,6 @@
 # Java 以外の言語の計装（S2）
 
-> **PHP は専用ページ `instrumentation-php.md` を参照**（Laravel 12 統合・`newrelic.ini`・素の PHP）。以下は Python / Node.js / Ruby / Go / .NET 共通の最小ファイルの説明。
+> **PHP は `instrumentation-php.md`、Next.js は `instrumentation-nextjs.md` を参照**（Laravel 12 統合・`newrelic.ini`・素の PHP）。以下は Python / Node.js / Ruby / Go / .NET 共通の最小ファイルの説明。
 
 **目的**: 段階 S2（`resource.owner_match` と `authz.decision`）に到達する。Java は計装ライブラリがある（`instrumentation-java.md`）。
 他の言語は、そのまま取り込める小さなファイルを `instrumentation/<言語>/` に置いている。
@@ -25,7 +25,7 @@
 | 言語 | ファイル | 確認した API（パッケージ） | テスト |
 |---|---|---|---|
 | Python | `instrumentation/python/authz_radar.py` | `newrelic.agent.add_custom_attribute`・`set_user_id`・`notice_error(expected=True)`（newrelic 14.1.0） | ✅ 単体テスト。実パッケージでの呼び出しも確認 |
-| Node.js | `instrumentation/node/authz-radar.js` | `addCustomAttribute`・`setUserID`・`noticeError(err, attrs, expected)`（newrelic 14.8.0） | ✅ 単体テスト |
+| Node.js | `instrumentation/node/authz-radar.js`（Next.js は別ページ **`instrumentation-nextjs.md`**） | `addCustomAttribute`・`setUserID`・`noticeError(err, attrs, expected)`（newrelic 14.x） | ✅ 単体テスト。Next.js ヘルパーも単体テスト＋デモで確認 |
 | Ruby | `instrumentation/ruby/authz_radar.rb` | `NewRelic::Agent.add_custom_attributes`・`set_user_id`・`notice_error(e, expected: true)`（newrelic_rpm 10.9.1） | ✅ 単体テスト |
 | Go | `instrumentation/go/authzradar.go` | `txn.AddAttribute`・`SetUserID`・`NoticeExpectedError`（go-agent v3.45.0。**Go 1.25 以上**） | ✅ 単体テスト。本物の `*newrelic.Transaction` が必要な API を満たすこともコンパイル時に確認 |
 | PHP | `instrumentation/php/`（Laravel 12 統合つき。別ページ **`instrumentation-php.md`**） | ✅ 関数名をエージェント 12.12.0 のソースで確認（`newrelic_add_custom_parameter`・`newrelic_set_user_id` 10.12+・`newrelic_notice_error`）。関数が無ければ何もしない | ✅ 単体テスト。Laravel 12・PHP 8.5.11 の脆弱デモ `examples/php-vuln-site` で実動作を確認 |

@@ -48,7 +48,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 |---|---|
 | 目的・段階・レポートの書き方・証拠の強さ | `shared/goals.md` |
 | 計装・アラート・Workflow・Autopilot / iRCA | `references/recommendations.md` |
-| Java / PHP / 他言語の計装 | `references/instrumentation-java.md`・`references/instrumentation-php.md`・`references/instrumentation-other-languages.md` |
+| Java / PHP / Next.js / 他言語の計装 | `references/instrumentation-java.md`・`references/instrumentation-php.md`・`references/instrumentation-nextjs.md`・`references/instrumentation-other-languages.md` |
 | API の方式（GraphQL・WebSocket 等） | `shared/protocols.md` |
 | データソース・属性・プライバシー | `shared/data-sources.md`・`shared/attribute-spec.md`・`shared/privacy.md` |
 | 規格の番号・証拠の強さ | `shared/standards.json`・`shared/detections.json` |

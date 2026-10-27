@@ -7,6 +7,17 @@
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-27
+
+### Added
+- **Next.js 対応**。`instrumentation/node/nextjs.js`: App Router の Route Handler・Pages API・Server Actions 向けの `withAuthzRadar`（`AsyncLocalStorage` でリクエストごとに独立した状態、`OwnershipError`→`Response` 変換）・`setUser`・`ownership`・`protocol`・`deny`。既存の Node コアの上に薄く実装。単体テスト13件
+- `instrumentation/node/package.json`（`@nr-authz-radar/node`、`.` と `./nextjs` の exports、`newrelic` は optional peer）
+- 脆弱なデモ `examples/nextjs-vuln-site`（App Router・Next.js 15）。IDOR（計装あり／なし）、observe/enforce 切替、**127.0.0.1 限定・デプロイ禁止**。Next.js 15.5 で observe の D01 ログと enforce の 404 を実機確認
+- 計装リファレンス `instrumentation-nextjs.md`。**`middleware.ts` は Edge ランタイムで Node エージェントが効かない**こと、属性はトランザクションのある場所（Route Handler 等）でだけ付くことを明記
+
+### Note
+- 実際に New Relic へ属性が届くことは未確認（Phase 5）。`@newrelic/next` と Next.js のバージョンの組み合わせに依存するため、導入時に R02 で確認する
+
 ## [0.13.0] - 2026-10-27
 
 ### Added
