@@ -29,7 +29,7 @@ Claude Code ── Skill（手順書）を読む
 | `shared/` | 共通の仕様（属性、目的と段階、データソース、方式、優先度、プライバシー、規格の対応表） | Claude と人 |
 | `scripts/` | 決まった計算・生成をするスクリプト。`risk_score.py`（順位）、`gen_alerts.py`（アラート）、`hunt.py`（NerdGraph で検知を実行。AI を使わない）、`inventory_{java,php,python,node,ruby,go}.py`（エンドポイントの一覧）、`catalog.py`（必要な節だけを表示）、`gen_xml_candidates.py`（XML 計装の候補）、`attack_layer.py`（ATT&CK レイヤー）、`ip_reputation.py`（IP 評価の照合・ローカル）、`find_appname.py`（リポジトリ→appName の特定） | **Claude が実行**（人が直接実行してもよい） |
 | `templates/` | New Relic に適用する設定の雛形（Terraform、Workflow Automation、Slack、Autopilot のプロンプト、ランブック） | Claude が埋めて出力 → **人が適用** |
-| `instrumentation/` | **あなたのアプリに組み込むコード**。Java は計装ライブラリ、Python・Node.js・Ruby・Go・PHP・.NET は取り込める小さなファイル | **開発者**（Claude は実行しない。組み込むパッチ案を作る） |
+| `instrumentation/` | **あなたのアプリに組み込むコード**。Java・PHP（Laravel）は計装ライブラリ、Next.js はヘルパー、Python・Node.js・Ruby・Go は取り込める小さなファイル、.NET はファイルのみ（未コンパイル） | **開発者**（Claude は実行しない。組み込むパッチ案を作る） |
 | `examples/`・`docs/samples/` | サンプルのアプリと、実際の実行結果・レポート例 | 人 |
 
 ### 何が自動で、何を人がやるか
@@ -89,8 +89,8 @@ Claude に「nr-authz-radar で何ができる？」と聞く。2つの Skill（
 | やりたいこと | 頼み方の例 | Claude がやること | 出力（サンプル） |
 |---|---|---|---|
 | **コード監査**（① 棚卸し） | 「このリポジトリの API の認可をレビューして。優先順位も付けて」 | エンドポイントとスコープの洗い出し → 問題の検出 → `risk_score.py` で順位付け | [コード監査レポート](samples/code-review-report.md)、[順位](samples/ranking.md) |
-| **前提の確認** | 「New Relic のアプリ shop-api で、今どんな攻撃に気づける状態か確認して」 | R01〜R15 を実行し、段階（S0〜S3）とデータソースを判定 | [New Relic レポート（例）](samples/newrelic-report.illustrative.md) |
-| **攻撃の兆候を調べる**（③ Hunt） | 「shop-api で直近24時間に IDOR や SQLi の兆候がないか調べて」 | 今の段階で実行できる検知（D01〜D23）だけを実行 | 同上 |
+| **前提の確認** | 「New Relic のアプリ shop-api で、今どんな攻撃に気づける状態か確認して」 | R01〜R17 を実行し、段階（S0〜S3）とデータソースを判定 | [New Relic レポート（例）](samples/newrelic-report.illustrative.md) |
+| **攻撃の兆候を調べる**（③ Hunt） | 「shop-api で直近24時間に IDOR や SQLi の兆候がないか調べて」 | 今の段階で実行できる検知（D01〜D25）だけを実行 | 同上 |
 | **利用実態**（②） | 「shop-api の API ごとの利用状況と、使われていない API を出して」 | U01〜U06 を実行し、コードと突き合わせ | — |
 | **調査**（④） | 「仮名化ユーザー u_3f9a… の昨日 10〜12時のアクセスを調べて」 | まず記録が残っているかを確認（I05〜I07）→ I01〜I04 | — |
 | **アラートの作成** | 「今の段階で作れるアラートを Terraform で出して」 | `gen_alerts.py` を実行。作れないものは条件付きで一覧に | [生成しなかったアラート](samples/alerts-SKIPPED-S0.md)、[Terraform の抜粋](samples/alerts-excerpt-S0.tf) |
@@ -110,8 +110,11 @@ IDOR が成功したかどうかは、アプリしか知らない。**`resource.
 
 | 言語 | 組み込み方 |
 |---|---|
-| Java（Spring Boot） | `instrumentation/java/` をビルドして依存に追加し、データ取得のメソッドに `@CheckOwnership(type = "order")`。詳細: [`instrumentation-java.md`](../skills/nr-appsec-guard/references/instrumentation-java.md) |
-| Python・Node.js・Ruby・Go・PHP・.NET | `instrumentation/<言語>/` のファイルをプロジェクトにコピーし、データ取得の直後に照合の関数を呼ぶ。詳細: [`instrumentation-other-languages.md`](../skills/nr-appsec-guard/references/instrumentation-other-languages.md) |
+| Java（Spring Boot） | 計装ライブラリ。データ取得のメソッドに `@CheckOwnership(type = "order")`。詳細: [`instrumentation-java.md`](../skills/nr-appsec-guard/references/instrumentation-java.md) |
+| PHP（Laravel 12 / 素の PHP） | Composer の計装ライブラリ（ミドルウェア / トレイト）。詳細: [`instrumentation-php.md`](../skills/nr-appsec-guard/references/instrumentation-php.md) |
+| Next.js（App Router / Server Actions） | `withAuthzRadar` ヘルパー（Route Handler で使う。Edge ミドルウェアは対象外）。詳細: [`instrumentation-nextjs.md`](../skills/nr-appsec-guard/references/instrumentation-nextjs.md) |
+| Python・Node.js・Ruby・Go | `instrumentation/<言語>/` のファイルをコピーし、データ取得の直後に照合関数を呼ぶ。詳細: [`instrumentation-other-languages.md`](../skills/nr-appsec-guard/references/instrumentation-other-languages.md) |
+| .NET | ファイルはあるが**未コンパイル**（この環境に SDK が無いため未検証） |
 
 最初は **OBSERVE モード**（記録だけ）で出し、本当に起きている IDOR を確認してから ENFORCE（拒否）に切り替える。
 

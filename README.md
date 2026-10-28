@@ -52,11 +52,12 @@ Claude にふつうの言葉で頼むだけです。
 | 仕組み（IDOR などをどう判定するか） | [docs/how-it-works.md](docs/how-it-works.md) |
 | リファレンス（必要なデータ・計装・アラート・ログ） | [docs/reference.md](docs/reference.md) |
 | 対応範囲（OWASP・CWE・ATT&CK など、何をカバーするか） | [docs/coverage.md](docs/coverage.md) |
+| **今できること / まだできないこと**（実装の現状） | [docs/status.md](docs/status.md) |
 | 変更履歴・ロードマップ | [CHANGELOG.md](CHANGELOG.md) |
 
 ## 状態
 
-実データでの検証（Phase 5）はこれからです。スクリプトと計装コードはテスト済みですが、**NRQL・Terraform・Workflow Automation はまだ実アカウントで検証していません**。バージョン 1.0.0 は、リリースの判断をした時点で付けます。
+**コード監査・ランキング・計装・補助スクリプトは今すぐ使えます（テスト済み）。** 一方、New Relic の検知クエリ・アラート・MCP 連携は「生成と設計」はできていますが、**実アカウントでの検証はこれから（Phase 5）** です。どこまで検証済みかは [docs/status.md](docs/status.md) に1枚でまとめています。バージョン 1.0.0 はリリースの判断をした時点で付けます。
 
 ## License
 

@@ -29,7 +29,7 @@ You ── read the report, review the files (configuration, patches) and **appl
 | `shared/` | Shared specifications (attributes, goals and stages, data sources, API styles, ranking, privacy, standards mapping). Written in Japanese; Claude reads them in any language | Claude and people |
 | `scripts/` | Deterministic tools: `risk_score.py` (ranking), `gen_alerts.py` (alerts), `hunt.py` (detections via NerdGraph, no AI), `inventory_{java,php,python,node,ruby,go}.py` (endpoint inventory), `catalog.py` (print only the sections you need), `gen_xml_candidates.py` (XML candidates), `attack_layer.py` (ATT&CK layer), `ip_reputation.py` (IP reputation, local), `find_appname.py` (repo → appName) | **Run by Claude** (you can run them too) |
 | `templates/` | Templates for New Relic (Terraform, Workflow Automation, Slack, Autopilot prompt, runbooks) | Filled in by Claude → **applied by you** |
-| `instrumentation/` | **Code you add to your application**: a Java library, and small files for Python, Node.js, Ruby, Go, PHP and .NET | **Developers** (Claude does not run it; it proposes patches that use it) |
+| `instrumentation/` | **Code you add to your application**: Java and PHP (Laravel) libraries, a Next.js helper, small files for Python/Node.js/Ruby/Go, and a .NET file (not compiled) | **Developers** (Claude does not run it; it proposes patches that use it) |
 | `examples/`, `docs/samples/` | A sample application, and real outputs and example reports | People |
 
 ### What is automatic and what you do
@@ -89,8 +89,8 @@ Ask in plain language; Claude picks the right Skill. **Ask in English and the ou
 | You want to | Example request | What Claude does | Output (samples) |
 |---|---|---|---|
 | **Review code** (① inventory) | "Review the authorization of the APIs in this repository and rank the issues" | inventories endpoints and scopes → finds issues → ranks them with `risk_score.py` | [code review report](samples/code-review-report.en.md), [ranking](samples/ranking.md) |
-| **Check readiness** | "For the New Relic app shop-api, what attacks can we notice today?" | runs R01–R15 and decides the stage (S0–S3) and data sources | [New Relic report (illustrative)](samples/newrelic-report.illustrative.en.md) |
-| **Hunt for attack signals** (③) | "Check shop-api for signs of IDOR or SQL injection in the last 24 hours" | runs only the detections (D01–D23) the current stage supports | same as above |
+| **Check readiness** | "For the New Relic app shop-api, what attacks can we notice today?" | runs R01–R17 and decides the stage (S0–S3) and data sources | [New Relic report (illustrative)](samples/newrelic-report.illustrative.en.md) |
+| **Hunt for attack signals** (③) | "Check shop-api for signs of IDOR or SQL injection in the last 24 hours" | runs only the detections (D01–D25) the current stage supports | same as above |
 | **Understand usage** (②) | "Show API usage for shop-api and the APIs nobody uses" | runs U01–U06 and compares with the code | — |
 | **Investigate** (④) | "Investigate pseudonymous user u_3f9a… between 10:00 and 12:00 yesterday" | first checks what was recorded (I05–I07), then I01–I04 | — |
 | **Create alerts** | "Generate the alerts we can use at our current stage as Terraform" | runs `gen_alerts.py`; lists what it could not create and why | [alerts not generated](samples/alerts-SKIPPED-S0.en.md), [Terraform excerpt](samples/alerts-excerpt-S0.tf) |
@@ -110,7 +110,10 @@ Only the application knows whether an IDOR succeeded. Add the code that sends **
 | Language | How |
 |---|---|
 | Java (Spring Boot) | build `instrumentation/java/`, add it as a dependency, put `@CheckOwnership(type = "order")` on the data-access method. Details (Japanese): [`instrumentation-java.md`](../skills/nr-appsec-guard/references/instrumentation-java.md), English summary: [`instrumentation/java/README.md`](../instrumentation/java/README.md) |
-| Python, Node.js, Ruby, Go, PHP, .NET | copy the file in `instrumentation/<language>/` into your project and call the check function right after loading the resource. Details (Japanese): [`instrumentation-other-languages.md`](../skills/nr-appsec-guard/references/instrumentation-other-languages.md); each file has English comments |
+| PHP (Laravel 12 / plain PHP) | Composer library (middleware / trait). Details (Japanese): [`instrumentation-php.md`](../skills/nr-appsec-guard/references/instrumentation-php.md) |
+| Next.js (App Router / Server Actions) | `withAuthzRadar` helper in Route Handlers (Edge middleware is out of scope). Details (Japanese): [`instrumentation-nextjs.md`](../skills/nr-appsec-guard/references/instrumentation-nextjs.md) |
+| Python, Node.js, Ruby, Go | copy the file in `instrumentation/<language>/` and call the check function right after loading the resource. Details (Japanese): [`instrumentation-other-languages.md`](../skills/nr-appsec-guard/references/instrumentation-other-languages.md) |
+| .NET | file present but **not compiled** (no SDK in the build environment, so unverified) |
 
 Ship it in **OBSERVE mode** first (record only), confirm what real IDORs look like, then switch to ENFORCE (deny).
 
