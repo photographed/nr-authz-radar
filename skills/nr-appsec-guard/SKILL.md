@@ -29,7 +29,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 
 | 目的 | 実行するもの | 読むもの |
 |---|---|---|
-| 前提の確認 | `catalog.py show R01 … R15` の NRQL（R02・R12・R13・R14・R15 が重要） | 結果の書き方は `catalog.py show` した各節の「出力形式」 |
+| 前提の確認 | `catalog.py show R01 … R17`（まず R17 でアプリ特定、R02・R12〜R15 が重要） | 結果の書き方は `catalog.py show` した各節の「出力形式」 |
 | ① 棚卸し | `api-authz-review` Skill ＋ U01・U02 | — |
 | ② 利用実態 | U01〜U06 | `shared/protocols.md`（REST 以外があるとき） |
 | ③ 攻撃検知 | `python3 <root>/scripts/hunt.py --app <appName> --account-id <id> --stage <S> --sources <…> --out .authz-radar/hunt` | `hunt-summary.md`。判定基準は該当 ID だけ `catalog.py show` |
@@ -41,6 +41,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 - **D01（IDOR 成功）や D20＋D21（RCE の成功の可能性）が出たら、最初に報告する**
 - **REST 以外では D04・D10 は反応しない。** 反応しないことを安全と書かず、D22 を使う。GraphQL は `api.operation` で集計する
 - 兆候があれば D18（または iRCA）で「攻撃か、自分たちの変更か」を切り分け、深掘りは ④ へ
+- **WAF データ（`edge.verdict`・AWS WAF）があれば D25 を見て「ブロック N 件／アプリ到達は D01 等で M 件」を報告。** 無ければ「WAF 未連携」。URL 詳細は L03
 - `api-authz-review` と連携するときは、検知の結果からエンドポイント別の `attack_signal` を作る（`catalog.py show` の対象外。`detections.nrql.md` 末尾の節）
 
 ## 参照（必要なときだけ）

@@ -216,6 +216,13 @@
         "min_count": 100,
         "list_placeholder": "users"
       }
+    },
+    "D25": {
+      "name": "WAF / CDN がブロックした攻撃",
+      "name_en": "Attacks blocked by the WAF / CDN",
+      "stage": "S0",
+      "requires": [],
+      "evidence": "anomaly"
     }
   }
 }

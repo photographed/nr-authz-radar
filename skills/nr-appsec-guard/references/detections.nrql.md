@@ -352,6 +352,32 @@ FACET transactionName, error.class SINCE {baseline}
 - 誤検知: 正当な入力ミスでも `SpelEvaluationException` 等は出る。平常時の件数（`{baseline}`）と比べる。
 - 注意: High-security mode では `error.message` が送られないため、`error.class` だけで判定する。
 
+## F. エッジ（WAF / CDN）
+
+WAF / CDN は、アプリに届く前に攻撃を遮断する。**ブロックされた攻撃は APM に現れない**ので、New Relic に
+WAF のデータ（AWS WAF のメトリクス・ログ、`edge.verdict` 属性）を送っている場合だけ見える。
+ここは「防御が効いている」ことの確認と、**ブロックの急増＝スキャン/攻撃の最中**の気づきに使う。
+WAF をすり抜けてアプリに届いた攻撃は D01（成功）・D07（SQL 文）・D06/D21（例外）で見る。
+
+### D25 WAF / CDN がブロックした攻撃 — 段階 S0 — 異常 — 前提 EDGE（`edge.verdict` または WAF 連携）— 要検証
+```sql
+-- アプリが WAF の判定を属性で送っている場合（shared/attribute-spec.md の edge.verdict）
+SELECT count(*) FROM Transaction
+WHERE appName = '{appName}' AND edge.verdict IN ('block', 'challenge')
+FACET edge.verdict, name SINCE {since} LIMIT 20
+```
+```sql
+-- AWS WAF をメトリクスで連携している場合（名前は連携方法で異なる。結果が空なら読み替える）
+SELECT sum(aws.wafv2.blockedRequests) AS blocked
+FROM Metric WHERE aws.wafv2.webACL LIKE '%{appName}%'
+FACET aws.wafv2.rule SINCE {since} LIMIT 20
+```
+- **着眼点**: どのルールが、どれだけブロックしたか。急増は、スキャンや攻撃の最中であることが多い。
+- **判定**: 平常時からの増加（`COMPARE WITH {baseline}`）で `anomaly`。単独では「攻撃をブロックした」という防御の記録であって、侵害ではない。
+- **必ずセットで見る**: ブロック数（D25）と、**アプリまで到達した攻撃**（D01・D06・D07・D21）。「WAF が N 件ブロック、うちアプリに届いて成功したものは 0 件」のように**両方を報告する**。
+- WAF のログ（遮断されたリクエストの URL・ルール）は、ログのラストワンマイル **L03**（`logs.nrql.md`）で、兆候が出た時間帯だけ取りに行く。`hunt.py` はログを読まない。
+- 属性名・メトリクス名は連携方法（AWS 統合・Firehose・Kinesis）で異なる。R15 / R16 の結果に合わせて読み替える。
+
 ## エンドポイント別 `attack_signal` の決め方（api-authz-review 連携）
 
 トランザクション名ごとに、上の検知結果の最大値を採用する。

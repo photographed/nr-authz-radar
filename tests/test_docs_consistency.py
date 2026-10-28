@@ -9,7 +9,7 @@ REFS = ROOT / "skills" / "nr-appsec-guard" / "references"
 class DocsConsistencyTest(unittest.TestCase):
     def test_referenced_detections_exist(self):
         defined = set(re.findall(r"^### (D\d{2}) ", (REFS / "detections.nrql.md").read_text(), re.M))
-        self.assertEqual(len(defined), 22)
+        self.assertEqual(len(defined), 23)
         for path in [REFS / "readiness-checks.md", REFS / "detections.nrql.md"]:
             for ref in set(re.findall(r"\bD\d{2}\b", path.read_text())):
                 self.assertIn(ref, defined, f"{path.name} references undefined {ref}")

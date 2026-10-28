@@ -61,6 +61,7 @@ HUNT_ONLY_EN = {
     "D18": "a reference query for correlation",
     "D20": "needs 'first seen destination' (earliest); run it in Hunt when D21 fires",
     "D24": "needs two event types (APM and Browser) compared, which an alert condition cannot do",
+    "D25": "a record of the WAF defending, not a breach; review spikes in a periodic report alongside what reached the app (D01, D06, D07)",
 }
 PLACEHOLDERS = {"{appName}": "${var.app_name}", "{bypassScopePattern}": "${var.bypass_scope_pattern}"}
 PAGING_LEVELS = ("evidence", "strong")
