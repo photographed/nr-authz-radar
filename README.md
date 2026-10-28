@@ -74,7 +74,7 @@ Readiness 監査は、この表を上から順に確認して不足を指摘し�
 | **必須** | 分散トレーシング | `Span` | API の中の SQL 文・外部呼び出し。画面から API までのつながり |
 | 推奨（S2） | 認可属性（コード計装） | `Transaction` の custom attribute | **IDOR 成功を証拠として見る唯一の手段**。最小は2属性（[`shared/attribute-spec.md`](shared/attribute-spec.md)） |
 | 推奨 | Browser エージェント | `PageView`、`AjaxRequest` | 画面から実際に呼ばれている API の一覧。正規の画面を通った呼び出しかの判定 |
-| 推奨 | Logs in context・アクセスログ | `Log` | トランザクションと結び付いたアプリのログ。**④ 調査で全件を確定させる手段**（APM はサンプリングされ得る） |
+| 任意 | Logs in context・アクセスログ | `Log` | **調査の最後の詰めだけに使う**（④ 全件の確定。APM はサンプリングされ得る）。**攻撃を探すためにログを全文スキャンすることはしない**。無くても検知・棚卸しは動く（詳細は下の「連携状況」と注記） |
 | 推奨 | Change Tracking | デプロイ記録 | 「攻撃か、自分たちの変更か」の切り分け（iRCA の精度にも影響） |
 | 任意 | ミドルウェア・WAF・ファイアウォール・OS のログ | `Log` | クエリ文字列を含むリクエスト内容、エッジでの判定、侵入後の操作 |
 | 任意 | Infrastructure / Network Performance Monitoring | `SystemSample`、`ProcessSample` など | 侵入後の兆候（不審なプロセス・通信） |
