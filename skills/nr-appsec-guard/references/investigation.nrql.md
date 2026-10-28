@@ -42,6 +42,10 @@ WHERE entity.name = '{appName}' OR service.name = '{appName}' SINCE 13 months ag
 
 ## B. 何をされたか
 
+### 補足: 不審 IP の照合（任意・ローカル・New Relic に送らない）
+
+調査で送信元 IP が分かっている場合、評価データベース（AbuseIPDB 等）と**手元で**照合できる: `python3 scripts/ip_reputation.py <IP...>`（または NRQL 結果を標準入力に流す）。**IP は New Relic に送らず**、利用者の API キーで照合する。「この IP は過去に攻撃元として報告あり」を調査の手がかりに添える（証拠ではない）。IP は個人データなので保全データ側に置く（`shared/privacy.md`）。
+
 ### I01 対象のタイムライン — 段階 S1（ユーザー）/ S3（API キー・ASN）
 ```sql
 SELECT count(*) FROM Transaction

@@ -388,6 +388,7 @@ claude mcp add --transport http newrelic-jp <JP リージョンの MCP エンド
 - [x] **v0.13.0** PHP をフル対応（Laravel 12 計装ライブラリ・`inventory_php.py`・PHP 8.5.11 の脆弱デモ `examples/php-vuln-site`・D06/D21 に PDO パターン）
 - [x] **v0.14.0** Next.js 対応（App Router の Route Handler / Server Actions 向け `withAuthzRadar` ヘルパー・デモ `examples/nextjs-vuln-site`。Edge ミドルウェアは対象外と明記）
 - [x] **v0.15.0** コード監査を全言語に拡大（`inventory_python.py`・`inventory_node.py`・`inventory_ruby.py`・`inventory_go.py`）、攻撃検知 D06・D21 を Node/Python/Ruby/Go/.NET までカバー
+- [x] **v0.16.0** 顧客フィードバック対応: D25（WAF / CDN がブロックした攻撃の報告）、R17（複数アプリの列挙）、`scripts/ip_reputation.py`（不審 IP の照合・ローカル・New Relic に送らない）
 - [ ] Phase 5: 攻撃シナリオでの検証（**v1.0.0 はリリースの判断をした時点で付ける**）
 
 ## 参考
