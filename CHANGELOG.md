@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-28
+
+### Added
+- **`scripts/find_appname.py`**: リポジトリ↔New Relic appName の突合（IDE 向け）。各エージェントの設定（Java/Ruby `newrelic.yml`、Python/PHP `newrelic.ini`、Node `newrelic.js`、.NET `newrelic.config`、Go の `ConfigAppName`）と、Dockerfile・compose・.env の `NEW_RELIC_APP_NAME` から候補を抽出し、**確度付き**（high=設定に literal／medium=環境変数の literal 既定／low=環境変数参照のみ＝値は repo 外）で出す。prod/staging や複数サービスは分けて提示し、混ぜない。`;` 区切りの複数 appName は分割。vendor/node_modules は除外。単体テスト8件
+- `api-authz-review` の Step 0 に「New Relic を使うならまず `find_appname.py` で appName を特定」を追加
+
+### Note
+- appName が環境変数でデプロイ時に外出しされている場合は repo から値が取れない。その場合は R17（`FACET appName`）で実データ側から一覧するか、ユーザーに確認する
+
+
 ## [0.16.0] - 2026-10-28
 
 ### Added

@@ -17,8 +17,8 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 
 ## コストとトークンを節約する（必ず守る）
 - **まとまった問い合わせ（前提の確認・Hunt）は `scripts/hunt.py`（NerdGraph）を優先する。** Claude は `hunt-summary.md` だけを読む。API キー（`NEW_RELIC_API_KEY`）が無いときだけ MCP で実行する
-- **MCP で問い合わせるときの規則**: 集計（`count`・`uniqueCount`・`percentage`）だけを使い、`SELECT *` や生のイベントを取らない。`FACET` は `LIMIT 20` まで。`SINCE` は必要最小限。Ground Truth の **AI を使う分析系ツールは使わず**、NRQL の実行だけに使う
-- **参照ファイルを丸ごと読まない**: まず `python3 <root>/scripts/catalog.py index --stage <段階>` で一覧を見て、必要な ID だけ `catalog.py show D01 I05 …` で読む
+- **MCP の規則**: 集計（`count`・`uniqueCount`・`percentage`）のみ。`SELECT *`・生イベントは取らない。`FACET` は `LIMIT 20`、`SINCE` は最小限。Ground Truth の **AI 分析ツールは使わず** NRQL 実行だけ
+- **参照ファイルを丸ごと読まない**: `catalog.py index --stage <段階>` で一覧 → 必要な ID だけ `catalog.py show D01 I05 …`
 - 結果は `.authz-radar/` に保存し、**同じ期間・同じ段階の結果があれば再利用する**
 - **ログはスキャンしない。** `catalog.py show L01 …` の L01〜L04 だけを使い、APM の手がかり（トレース ID・ユーザー・時間帯）で範囲を絞る
 - **Autopilot は CRITICAL（証拠）のアラートからだけ。** Skill からも定期の Hunt からも呼ばない
@@ -26,6 +26,7 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 
 ## 目的ごとの進め方
 最初に依頼の目的を判定し、混ぜない。曖昧なら前提の確認から始める。リージョンは `newrelic-us`（JP は利用者が `newrelic-jp` を追加）。
+リポジトリがあれば `scripts/find_appname.py <repo>` で appName を特定（複数・0件は確認。R17 でも可）。
 
 | 目的 | 実行するもの | 読むもの |
 |---|---|---|

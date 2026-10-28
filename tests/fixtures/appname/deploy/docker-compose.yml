@@ -1,0 +1,9 @@
+services:
+  api:
+    image: payments-api:latest
+    environment:
+      NEW_RELIC_APP_NAME: "Payments API"
+      NEW_RELIC_LICENSE_KEY: ${NR_KEY}
+  worker:
+    environment:
+      - NEW_RELIC_APP_NAME=${WORKER_APP_NAME}

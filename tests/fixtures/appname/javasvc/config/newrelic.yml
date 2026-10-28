@@ -1,0 +1,8 @@
+common: &default_settings
+  license_key: '<%= ENV["NEW_RELIC_LICENSE_KEY"] %>'
+  app_name: Shop Orders API
+  distributed_tracing:
+    enabled: true
+production:
+  <<: *default_settings
+  app_name: Shop Orders API (Production)

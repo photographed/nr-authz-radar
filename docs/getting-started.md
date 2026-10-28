@@ -27,7 +27,7 @@ Claude Code ── Skill（手順書）を読む
 |---|---|---|
 | `skills/` | Claude への手順書。`api-authz-review`（コード監査）と `nr-appsec-guard`（New Relic での確認・検知・調査・計装の推奨・アラート生成） | Claude |
 | `shared/` | 共通の仕様（属性、目的と段階、データソース、方式、優先度、プライバシー、規格の対応表） | Claude と人 |
-| `scripts/` | 決まった計算・生成をするスクリプト。`risk_score.py`（順位）、`gen_alerts.py`（アラート）、`hunt.py`（NerdGraph で検知を実行。AI を使わない）、`inventory_{java,php,python,node,ruby,go}.py`（エンドポイントの一覧）、`catalog.py`（必要な節だけを表示）、`gen_xml_candidates.py`（XML 計装の候補）、`attack_layer.py`（ATT&CK レイヤー）、`ip_reputation.py`（IP 評価の照合・ローカル） | **Claude が実行**（人が直接実行してもよい） |
+| `scripts/` | 決まった計算・生成をするスクリプト。`risk_score.py`（順位）、`gen_alerts.py`（アラート）、`hunt.py`（NerdGraph で検知を実行。AI を使わない）、`inventory_{java,php,python,node,ruby,go}.py`（エンドポイントの一覧）、`catalog.py`（必要な節だけを表示）、`gen_xml_candidates.py`（XML 計装の候補）、`attack_layer.py`（ATT&CK レイヤー）、`ip_reputation.py`（IP 評価の照合・ローカル）、`find_appname.py`（リポジトリ→appName の特定） | **Claude が実行**（人が直接実行してもよい） |
 | `templates/` | New Relic に適用する設定の雛形（Terraform、Workflow Automation、Slack、Autopilot のプロンプト、ランブック） | Claude が埋めて出力 → **人が適用** |
 | `instrumentation/` | **あなたのアプリに組み込むコード**。Java は計装ライブラリ、Python・Node.js・Ruby・Go・PHP・.NET は取り込める小さなファイル | **開発者**（Claude は実行しない。組み込むパッチ案を作る） |
 | `examples/`・`docs/samples/` | サンプルのアプリと、実際の実行結果・レポート例 | 人 |

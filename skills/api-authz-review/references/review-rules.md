@@ -9,6 +9,9 @@
 
 Gateway の設定が無い場合は、「スコープ検証がコード外にある可能性」をユーザーに一度だけ確認する。
 
+**New Relic を使う場合は、まず `python3 scripts/find_appname.py <repo>` でリポジトリ→appName を特定する。**
+各エージェントの設定（`newrelic.yml`/`newrelic.ini`/`newrelic.js`/`newrelic.config`、Go の `ConfigAppName`、環境変数 `NEW_RELIC_APP_NAME`）から候補を出す。確度 high が1つなら確認のうえ採用、複数（prod/staging・複数サービス）や0件（環境変数で外出し）ならユーザーに確認する。混ぜて1つのレポートにしない。
+
 ### Step 1. エンドポイント一覧を作る（Java / Spring）
 
 **まず `scripts/inventory_java.py` を実行し、その結果（`inventory.md`）から読み始める。** リポジトリ全体を読まない。

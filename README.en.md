@@ -106,7 +106,7 @@ Details (Japanese): the "対応範囲" section of [README.md](README.md) and [`s
 
 ## Status
 
-Version **0.16.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
+Version **0.17.0**. Scripts and instrumentation code are tested. **NRQL queries, Terraform and Workflow Automation have not been validated against a real New Relic account yet** (Phase 5). 1.0.0 will be tagged on an explicit release decision. See [CHANGELOG.md](CHANGELOG.md) (Japanese).
 
 ## Language
 
