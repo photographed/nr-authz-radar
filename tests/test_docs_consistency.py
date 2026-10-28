@@ -137,11 +137,11 @@ class StandardsMappingTest(unittest.TestCase):
     def test_usage_mapping_ids_exist(self):
         self.assertLessEqual(set(self.std["usage"]), _defined("U", "usage.nrql.md"))
 
-    def test_readme_lists_finding_cwes(self):
-        readme = (ROOT / "README.md").read_text()
+    def test_coverage_doc_lists_finding_cwes(self):
+        coverage = (ROOT / "docs" / "coverage.md").read_text()
         for key, entry in self.std["findings"].items():
             for cwe in entry["cwe"]:
-                self.assertIn(cwe, readme, f"README is missing {cwe} ({key})")
+                self.assertIn(cwe, coverage, f"docs/coverage.md is missing {cwe} ({key})")
 
 
 class VersioningTest(unittest.TestCase):

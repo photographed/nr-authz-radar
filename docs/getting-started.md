@@ -97,7 +97,7 @@ Claude に「nr-authz-radar で何ができる？」と聞く。2つの Skill（
 | **計装のパッチ** | 「IDOR の候補に計装を入れるパッチを作って」 | `@CheckOwnership` 等のパッチ案を作る | コード監査レポートの「推奨」 |
 | **XML の候補**（コード変更なし） | 「認可チェックのメソッドを XML で計装する候補を出して」 | `gen_xml_candidates.py` を実行 | [XML 候補](samples/xml-candidates.md) |
 
-**いつ使うか**（頻度）は README の「いつ使うか」を参照。最も効果が大きいのは **PR・リリース前のコード監査**。
+**いつ使うか**（頻度）は [concepts.md](concepts.md) の「いつ使うか」を参照。最も効果が大きいのは **PR・リリース前のコード監査**。
 
 ### サンプルの見方
 - [`docs/samples/code-review-report.md`](samples/code-review-report.md) — **実際の実行結果**（`examples/sample-app/` を監査したもの）

@@ -7,6 +7,15 @@
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-10-28
+
+### Changed
+- **README を大幅に短く・人が読みやすく再構成**（405行→約60行）。「何ができるか」と「使い方」に絞り、詳細は docs に分離。フィードバック「README が長すぎて分かりにくい」への対応
+- 新しいドキュメント: `docs/concepts.md`（4つの目的・段階・いつ使うか・優先順位・方針）、`docs/reference.md`（必要データ・連携状況・API 方式・計装・アラート・ログ・コスト・MCP 接続）、`docs/coverage.md`（OWASP・API Top 10・CIS・CWE・ASVS・OAT・IPA・ATT&CK・対象外）
+- ロードマップは CHANGELOG に一本化（README からは変更履歴へのリンクのみ）
+- README.en.md も同様に短縮
+
+
 ## [0.17.1] - 2026-10-28
 
 ### Changed
