@@ -14,7 +14,7 @@ services:
     volumes:
       - .:/app
       # the nr-authz-radar PHP library, referenced as a path repo in composer.json
-      - ../../instrumentation/php:/instrumentation/php
+      - ../../plugin/instrumentation/php:/instrumentation/php
     env_file:
       - .env
     environment:

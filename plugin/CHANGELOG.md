@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+## [0.17.5] - 2026-10-29
+
+### Changed
+- **公開プラグインを `plugin/` サブディレクトリに集約**（スキル審査ゲート対応・その2）。`skills/ scripts/ shared/ templates/ instrumentation/ docs/ .mcp.json README/CHANGELOG` と `plugin.json` を `plugin/` に移動し、`marketplace.json` の `source` を `./plugin` に変更。**`examples/` と `tests/` はリポジトリ直下に残し、配布プラグインには含めない**（開発用）。これにより NET-001 の原因（デモの lockfile・テスト用 IP）が配布物から外れる。リポジトリ直下には案内用の短い README を新設
+
 ## [0.17.4] - 2026-10-29
 
 ### Fixed

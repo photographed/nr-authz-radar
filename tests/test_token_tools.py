@@ -3,13 +3,14 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugin"
 sys.path.insert(0, str(ROOT / "scripts"))
 import catalog  # noqa: E402
 import inventory_java as inv  # noqa: E402
 
-SAMPLE = ROOT / "examples" / "sample-app" / "src" / "main" / "java"
-FIXTURE = ROOT / "tests" / "fixtures" / "java-authz" / "src" / "main" / "java"
+SAMPLE = REPO / "examples" / "sample-app" / "src" / "main" / "java"
+FIXTURE = REPO / "tests" / "fixtures" / "java-authz" / "src" / "main" / "java"
 
 
 class CatalogTest(unittest.TestCase):
@@ -97,7 +98,7 @@ class SkillBudgetTest(unittest.TestCase):
 
 import inventory_php as invphp  # noqa: E402
 
-PHP_SITE = ROOT / "examples" / "php-vuln-site"
+PHP_SITE = REPO / "examples" / "php-vuln-site"
 
 
 class PhpInventoryTest(unittest.TestCase):
@@ -128,7 +129,7 @@ class PhpInventoryTest(unittest.TestCase):
 
 import inventory_python as invpy  # noqa: E402
 
-PY_FIXTURE = ROOT / "tests" / "fixtures" / "python-authz"
+PY_FIXTURE = REPO / "tests" / "fixtures" / "python-authz"
 
 
 class PythonInventoryTest(unittest.TestCase):
@@ -167,7 +168,7 @@ class PythonInventoryTest(unittest.TestCase):
 
 import inventory_node as invnode  # noqa: E402
 
-NODE_FIXTURE = ROOT / "tests" / "fixtures" / "node-authz"
+NODE_FIXTURE = REPO / "tests" / "fixtures" / "node-authz"
 
 
 class NodeInventoryTest(unittest.TestCase):
@@ -199,8 +200,8 @@ class NodeInventoryTest(unittest.TestCase):
 import inventory_ruby as invrb  # noqa: E402
 import inventory_go as invgo    # noqa: E402
 
-RB_FIXTURE = ROOT / "tests" / "fixtures" / "ruby-authz"
-GO_FIXTURE = ROOT / "tests" / "fixtures" / "go-authz"
+RB_FIXTURE = REPO / "tests" / "fixtures" / "ruby-authz"
+GO_FIXTURE = REPO / "tests" / "fixtures" / "go-authz"
 
 
 class RubyInventoryTest(unittest.TestCase):

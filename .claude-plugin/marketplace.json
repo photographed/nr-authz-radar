@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "nr-authz-radar",
-      "source": "./",
+      "source": "./plugin",
       "description": "New Relic Ground Truth (MCP) based detection and ranking of authorization attacks (IDOR/BOLA, SQLi, AI-agent scraping) plus source-code scope audit."
     }
   ]

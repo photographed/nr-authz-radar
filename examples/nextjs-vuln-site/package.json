@@ -9,7 +9,7 @@
     "start": "next start -H 127.0.0.1 -p 3000"
   },
   "dependencies": {
-    "@nr-authz-radar/node": "file:../../instrumentation/node",
+    "@nr-authz-radar/node": "file:../../plugin/instrumentation/node",
     "next": "^15.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

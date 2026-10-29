@@ -2,7 +2,8 @@ import re
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugin"
 REFS = ROOT / "skills" / "nr-appsec-guard" / "references"
 
 

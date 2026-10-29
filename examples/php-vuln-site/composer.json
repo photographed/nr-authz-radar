@@ -65,7 +65,7 @@
     "repositories": [
         {
             "type": "path",
-            "url": "../../instrumentation/php",
+            "url": "../../plugin/instrumentation/php",
             "options": {
                 "symlink": false
             }

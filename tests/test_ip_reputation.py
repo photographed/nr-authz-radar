@@ -3,7 +3,8 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugin"
 sys.path.insert(0, str(ROOT / "scripts"))
 import ip_reputation as ipr  # noqa: E402
 

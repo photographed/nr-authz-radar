@@ -7,7 +7,8 @@ import subprocess
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugin"
 INST = ROOT / "instrumentation"
 SPEC = (ROOT / "shared" / "attribute-spec.md").read_text()
 EXPECTED = "u_" + hmac.new(b"k", b"alice", hashlib.sha256).hexdigest()[:16]

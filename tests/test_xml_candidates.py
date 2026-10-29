@@ -3,11 +3,12 @@ import unittest
 import xml.dom.minidom
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugin"
 sys.path.insert(0, str(ROOT / "scripts"))
 import gen_xml_candidates as gen  # noqa: E402
 
-SRC = ROOT / "tests" / "fixtures" / "java-authz" / "src" / "main" / "java"
+SRC = REPO / "tests" / "fixtures" / "java-authz" / "src" / "main" / "java"
 
 
 class XmlCandidatesTest(unittest.TestCase):
