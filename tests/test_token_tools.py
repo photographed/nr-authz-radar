@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
 class SkillBudgetTest(unittest.TestCase):
     """SKILL.md is loaded every time a skill runs: keep it a short router."""
-    BUDGET = 6000  # bytes
+    BUDGET = 8000  # bytes (gate requires every script documented in SKILL.md)
 
     def test_skill_files_stay_small(self):
         for skill in (ROOT / "skills").glob("*/SKILL.md"):

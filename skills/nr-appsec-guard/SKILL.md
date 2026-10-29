@@ -54,3 +54,17 @@ description: Detect authorization attacks (IDOR/BOLA, scope abuse, SQLi, credent
 | API の方式（GraphQL・WebSocket 等） | `shared/protocols.md` |
 | データソース・属性・プライバシー | `shared/data-sources.md`・`shared/attribute-spec.md`・`shared/privacy.md` |
 | 規格の番号・証拠の強さ | `shared/standards.json`・`shared/detections.json` |
+
+## 同梱スクリプト（`<root>/scripts/`。各スクリプトの目的と動作）
+Claude が Bash で実行する決定的ツール。入力・出力はファイル。ネットワークへ出るのは hunt.py（NerdGraph）と ip_reputation.py（利用者が指定した評価 API）のみ。
+- `hunt.py`: 検知カタログの NRQL を NerdGraph で実行し証拠の強さ別に要約（AI 不使用）
+- `catalog.py`: 検知・調査・前提確認の一覧と、必要な節だけを表示（参照ファイルを丸読みしない）
+- `risk_score.py`: Finding を決定的にランキング（同じ入力→同じ順位）
+- `gen_alerts.py`: 段階・データソースに合うアラート条件を Terraform として生成
+- `gen_xml_candidates.py`: Java エージェントの XML 計装の候補を生成（コード変更なしの経路）
+- `attack_layer.py`: 段階・データソースから ATT&CK Navigator のレイヤー JSON を生成
+- `find_appname.py`: リポジトリの各エージェント設定・環境変数から New Relic appName を特定
+- `ip_reputation.py`: 送信元 IP を評価 DB（AbuseIPDB 等）と**ローカルで**照合（New Relic には送らない・任意）
+- `inventory_java.py` / `inventory_php.py` / `inventory_python.py` / `inventory_node.py` / `inventory_ruby.py` / `inventory_go.py`: 各言語のエンドポイントと認可・怪しい箇所を正規表現で棚卸し（候補出し。`api-authz-review` が使用）
+
+計装ライブラリの `instrumentation/java/gradlew`・`gradlew.bat` は **Gradle 公式の wrapper（生成物）**。Java ライブラリの**ビルド専用**で、スキル実行時には使わない。内部の `eval` は wrapper が POSIX シェルで引数を正しく扱うための標準実装（スクリプトのコメント参照）。

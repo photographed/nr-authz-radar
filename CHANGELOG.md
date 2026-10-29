@@ -7,6 +7,12 @@
 
 ## [Unreleased]
 
+## [0.17.4] - 2026-10-29
+
+### Fixed
+- **スキル審査ゲート対応（その1）**: `scripts/` 全14本の目的と動作を `nr-appsec-guard/SKILL.md` に明記（EXEC-006）。`instrumentation/java/gradlew` の `eval` は Gradle 公式 wrapper の標準実装でビルド専用である旨を明記（CMD-001）。SKILL.md のサイズ上限（テスト）を 6000→8000 に調整
+
+
 ## [0.17.3] - 2026-10-28
 
 ### Added
